@@ -15,6 +15,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
@@ -92,8 +93,11 @@ public class Game {
 
     public void generatePiecesPosition(){
         String fileName = "map_2.txt";
+        Path pathToProject = Paths.get("");
+        Path filePath = Paths.get(pathToProject.toAbsolutePath() + "\\src\\main\\java\\com\\example\\demo\\" + fileName);
+        System.out.println(filePath.toAbsolutePath());
         try {
-            List<String> allLines = Files.readAllLines(Paths.get("C:\\SKOLA\\JAVA\\smestalka\\test_1\\demo\\src\\main\\java\\com\\example\\demo\\" + fileName));
+            List<String> allLines = Files.readAllLines(filePath);
 
             int y = 0;
             for (String line : allLines) {
