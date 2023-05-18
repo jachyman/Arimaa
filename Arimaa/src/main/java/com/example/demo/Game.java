@@ -7,7 +7,9 @@ import com.example.demo.pieces.Piece;
 import com.example.demo.pieces.Rabbit;
 import com.example.demo.pieces.SpecialPiece;
 
+import javafx.scene.Node;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 
@@ -17,21 +19,30 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Game {
 
+    private final Color selectedPieceColor = Color.LIGHTBLUE;
+    private final Color possibleMovesColor = Color.LIGHTGREEN;
+
+    boolean whiteChoseAllPieces;
+
+    Set<Move> legalMoves;
+    Set<Tile> possibleTiles;
+
     Board board;
     GridPane gameGrid;
-    boolean whiteChoseAllPieces;
     Player currentPlayer;
+    Tile chosenTile;
 
     public Game(Board board, GridPane gameGrid) {
         this.gameGrid = gameGrid;
         this.board = board;
         this.whiteChoseAllPieces = false;
+        this.chosenTile = null;
+        this.possibleTiles = new HashSet<>();
     }
 
     public void choosePiecesPosition(Player player){
@@ -80,8 +91,7 @@ public class Game {
                         }
 
                         t.setPiece(piece);
-
-                        drawPiece(finalJ, finalI, piece);
+                        drawTile(t);
 
                         chosenPiecesCount.getAndIncrement();
                         board.print();
@@ -92,7 +102,8 @@ public class Game {
     }
 
     public void generatePiecesPosition(){
-        String fileName = "map_2.txt";
+        //String fileName = "map_2.txt";
+        String fileName = "map_simple.txt";
         Path pathToProject = Paths.get("");
         Path filePath = Paths.get(pathToProject.toAbsolutePath() + "\\src\\main\\java\\com\\example\\demo\\" + fileName);
         System.out.println(filePath.toAbsolutePath());
@@ -120,8 +131,10 @@ public class Game {
                             case 'e' -> piece = new SpecialPiece.Elephant(x, y, Player.WHITE);
                         }
 
-                        board.tiles[y][x].setPiece(piece);
-                        drawPiece(x, y, piece);
+
+                        Tile tile = board.tiles[y][x];
+                        tile.setPiece(piece);
+                        //drawTile(tile);
                     }
                 }
                 y++;
@@ -129,6 +142,7 @@ public class Game {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        drawBoard();
     }
     public void play(){
         setGame();
@@ -146,37 +160,77 @@ public class Game {
 
     private void setTile(Tile tile){
         tile.tileSquare.setOnMouseClicked(e -> {
-            if (tile.isTileOccupied() && currentPlayer == tile.getPiece().getPiecePlayer()){
-                //t.tileSquare.setFill(Color.RED);
-                Set<Move> moves = tile.getPiece().legalMoves(board);
-                board.clear();
-                drawLegalMoves(tile, moves);
+            if (chosenTile != null && possibleTiles.contains(tile)){
+                //tile.tileSquare.setFill(Color.YELLOW);
+                movePiece(chosenTile, tile);
                 currentPlayer = currentPlayer == Player.WHITE ? Player.BLACK : Player.WHITE;
             }
+            else if (tile.isTileOccupied() && currentPlayer == tile.getPiece().getPiecePlayer()){
+                chosenTile = tile;
+
+                legalMoves = tile.getPiece().generateLegalMoves(board);
+                possibleTiles = generatePossibleTiles(tile, legalMoves);
+
+                board.clear();
+                tile.tileSquare.setFill(selectedPieceColor);
+                drawLegalMoves(possibleTiles);
+            }
+            else {
+                chosenTile = null;
+                board.clear();
+            }
+
+            board.print();
         });
     }
 
-    private void drawLegalMoves(Tile tile, Set<Move> legalMoves){
-        int x = tile.tileCoordinateX;
-        int y = tile.tileCoordinateY;
+    private void drawBoard(){
+        for (int y = 0; y < 8; ++y){
+            for (int x = 0; x < 8; ++x){
+                Tile tile = board.tiles[y][x];
+                drawTile(tile);
+            }
+        }
+    }
+    private void drawTile(Tile tile){
+        gameGrid.add(tile.pieceText, tile.tileCoordinateX, tile.tileCoordinateY);
+    }
+
+    private void movePiece (Tile fromTile, Tile toTile){
+        Piece piece = board.tiles[fromTile.tileCoordinateY][fromTile.tileCoordinateX].getPiece();
+
+        piece.piecePositionX = toTile.tileCoordinateX;
+        piece.piecePositionY = toTile.tileCoordinateY;
+
+        board.tiles[toTile.tileCoordinateY][toTile.tileCoordinateX].setPiece(piece);
+        board.tiles[fromTile.tileCoordinateY][fromTile.tileCoordinateX].setPiece(null);
+
+        board.clear();
+    }
+    private Set<Tile> generatePossibleTiles(Tile startTile, Set<Move> legalMoves){
+        Set<Tile> possibleTiles = new HashSet<>();
+
+        int x = startTile.tileCoordinateX;
+        int y = startTile.tileCoordinateY;
         if (legalMoves.contains(Move.UP)){
-            board.tiles[y-1][x].tileSquare.setFill(Color.GREEN);
+            possibleTiles.add(board.tiles[y-1][x]);
         }
         if (legalMoves.contains(Move.DOWN)){
-            board.tiles[y+1][x].tileSquare.setFill(Color.GREEN);
+            possibleTiles.add(board.tiles[y+1][x]);
         }
         if (legalMoves.contains(Move.LEFT)){
-            board.tiles[y][x-1].tileSquare.setFill(Color.GREEN);
+            possibleTiles.add(board.tiles[y][x-1]);
         }
         if (legalMoves.contains(Move.RIGHT)){
-            board.tiles[y][x+1].tileSquare.setFill(Color.GREEN);
+            possibleTiles.add(board.tiles[y][x+1]);
         }
 
+        return possibleTiles;
     }
-    private void drawPiece(int x, int y, Piece piece){
-        String color = piece.getPiecePlayer() == Player.WHITE ? "W" : "B";
-        String pieceString = String.valueOf(piece.c) + "-" + color;
-        Text pieceText = new Text(pieceString);
-        gameGrid.add(pieceText, x, y);
+    private void drawLegalMoves(Set<Tile> possibleTiles){
+
+        for (Tile possibleTile : possibleTiles) {
+            possibleTile.tileSquare.setFill(possibleMovesColor);
+        }
     }
 }

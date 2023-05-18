@@ -11,8 +11,8 @@ import java.util.Set;
 
 public abstract class Piece {
 
-    protected int piecePositionX;
-    protected int piecePositionY;
+    public int piecePositionX;
+    public int piecePositionY;
     protected Player piecePlayer;
     protected int pieceStrength;
     public char c;
@@ -23,7 +23,7 @@ public abstract class Piece {
         this.piecePlayer = piecePlayer;
     }
 
-    abstract public Set<Move> legalMoves(Board board);
+    abstract public Set<Move> generateLegalMoves(Board board);
     public Player getPiecePlayer(){
         return piecePlayer;
     }

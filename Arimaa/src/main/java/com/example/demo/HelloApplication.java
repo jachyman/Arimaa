@@ -21,8 +21,7 @@ public class HelloApplication extends Application {
     Scene menuScene, gameScene;
     int width = 800;
     int height = 800;
-    GridPane menuGrid;
-    GridPane gameGrid;
+    GridPane menuGrid, gameGrid;
     Board board;
     Game game;
 
@@ -82,9 +81,6 @@ public class HelloApplication extends Application {
 
         startButton = new Button("Start");
         startButton.setOnAction(e -> stage.setScene(gameScene));
-
-        //GridPane.setHalignment(startButton, HPos.CENTER);
-        //GridPane.setHalignment(menuLabel, HPos.CENTER);
 
         GridPane.setConstraints(startButton, 0, 5);
         GridPane.setConstraints(menuLabel, 0, 0);

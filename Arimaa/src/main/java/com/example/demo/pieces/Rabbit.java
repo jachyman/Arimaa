@@ -19,7 +19,7 @@ public class Rabbit extends Piece{
     }
 
     @Override
-    public Set<Move> legalMoves(Board board) {
+    public Set<Move> generateLegalMoves(Board board) {
         Set<Move> moves = new HashSet<>();
         if (piecePlayer == Player.WHITE && piecePositionY > 0 && !board.tiles[piecePositionY - 1][piecePositionX].isTileOccupied()){
             moves.add(Move.UP);
