@@ -7,11 +7,16 @@ import com.example.demo.pieces.Piece;
 import com.example.demo.pieces.Rabbit;
 import com.example.demo.pieces.SpecialPiece;
 
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
+import javafx.stage.Stage;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -204,8 +209,50 @@ public class Game {
 
         board.tiles[toTile.tileCoordinateY][toTile.tileCoordinateX].setPiece(piece);
         board.tiles[fromTile.tileCoordinateY][fromTile.tileCoordinateX].setPiece(null);
-
         board.clear();
+
+        if (rabbitOnLastTile(piece)){
+            gameOver(currentPlayer);
+        }
+    }
+
+    private void restartGame(){
+
+    }
+    private void gameOver (Player winner){
+        int width = 300;
+        int height = 300;
+
+        GridPane gameOverGrid = new GridPane();
+        gameOverGrid.setPadding(new Insets(10, 10, 10, 10));
+
+        Label gameOverLabel = new Label("GAME OVER");
+        String winnerString = winner == Player.WHITE ? "WHITE" : "BLACK";
+        Label winnerLabel = new Label("THE WINNER IS " + winnerString);
+
+        GridPane.setConstraints(gameOverLabel, 0, 0);
+        GridPane.setConstraints(winnerLabel, 0, 3);
+
+        gameOverGrid.getChildren().addAll(gameOverLabel, winnerLabel);
+        gameOverGrid.setAlignment(Pos.CENTER);
+
+        Scene gameOverScene = new Scene(gameOverGrid, width, height);
+        Stage gameOverStage = new Stage();
+        gameOverStage.setScene(gameOverScene);
+        gameOverStage.setTitle("Game over");
+
+        gameOverStage.show();
+    }
+
+    private boolean rabbitOnLastTile(Piece piece){
+        boolean ret = false;
+        if (piece.isRabbit && currentPlayer == piece.getPiecePlayer()){
+            if ((piece.getPiecePlayer() == Player.WHITE && piece.piecePositionY == 0) ||
+                (piece.getPiecePlayer() == Player.BLACK && piece.piecePositionY == 7)){
+                ret = true;
+            }
+        }
+        return ret;
     }
     private Set<Tile> generatePossibleTiles(Tile startTile, Set<Move> legalMoves){
         Set<Tile> possibleTiles = new HashSet<>();
