@@ -1,12 +1,10 @@
-module com.example.demo {
+module com.arimaa {
     requires javafx.controls;
     requires javafx.fxml;
 
 
-    opens com.example.demo to javafx.fxml;
-    exports com.example.demo;
-    exports com.example.demo.pieces;
-    opens com.example.demo.pieces to javafx.fxml;
-    exports com.example.demo.board;
-    opens com.example.demo.board to javafx.fxml;
+    opens com.arimaa to javafx.fxml;
+    exports com.arimaa;
+    exports com.arimaa.pieces;
+    opens com.arimaa.pieces to javafx.fxml;
 }
