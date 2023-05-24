@@ -3,54 +3,145 @@ package com.arimaa;
 import com.arimaa.pieces.Piece;
 import com.arimaa.pieces.Rabbit;
 import com.arimaa.pieces.SpecialPiece;
+import javafx.scene.paint.Color;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 public class Game {
 
     private Player currentPlayer;
     private final Board board;
     private final GUI gui;
+
+    public GameType gameType;
     private Tile chosenTile;
+
+    private List<Piece> computerPieces;
+    private Set<Piece> goldRabbitPieces;
+    private Set<Piece> silverRabbitPieces;
+
     private Set<Move> legalMoves;
-    private Set<Tile> possibleTiles;
-    private int moveCount;
+    private List<Tile> possibleTiles;
+
+    private boolean gameIsOver;
+    public int moveCount;
     private final int maxMoves = 4;
 
     public Game(Board board, GUI gui) {
         this.board = board;
         this.gui = gui;
+        computerPieces = new ArrayList<>();
     }
 
-    public void startAgainstPlayer(){
-        generatePiecesPosition();
+    public void startVersusPlayer(){
+        gameType = GameType.versusPlayer;
         setGame();
-    }
-    public void startAgainstComputer(){
         generatePiecesPosition();
+        setTiles();
+    }
+    public void startVersusComputer(){
+        gameType = GameType.versusComputer;
+        setGame();
+        generatePiecesPosition();
+        setTiles();
     }
     private void setGame(){
+        gui.createGameScene(board, this);
+
         currentPlayer = Player.GOLD;
         moveCount = 0;
-        setTiles();
         chosenTile = null;
+        gameIsOver = false;
+
+        goldRabbitPieces = new HashSet<>();
+        silverRabbitPieces = new HashSet<>();
+
         gui.setMoveCounter(moveCount);
         gui.setCurrentPlayer(currentPlayer);
+        gui.goldPlayerStopwatch.start();
     }
 
     public void endTurn(){
-        if (moveCount > 0){
-            currentPlayer = currentPlayer == Player.GOLD ? Player.SILVER : Player.GOLD;
+        Player winner = checkGameOver();
+        if (gameIsOver){
+            gui.gameOverScreen(winner, this);
+        }
+        else {
+            switchStopwatch();
+            currentPlayer = oppositePlayer(currentPlayer);
             moveCount = 0;
             gui.setMoveCounter(moveCount);
             gui.setCurrentPlayer(currentPlayer);
+
+            if (gameType == GameType.versusComputer && currentPlayer == Player.SILVER) {
+                playComputerTurn();
+            }
         }
+    }
+
+    private void switchStopwatch(){
+        if (currentPlayer == Player.GOLD) {
+            gui.goldPlayerStopwatch.pause();
+            if (gameType == GameType.versusPlayer){
+                gui.silverPlayerStopwatch.resume();
+            }
+        } else {
+            if (gameType == GameType.versusPlayer){
+                gui.silverPlayerStopwatch.pause();
+            }
+            gui.goldPlayerStopwatch.resume();
+        }
+    }
+
+    private void playComputerTurn(){
+        //int computerMoveCount = ThreadLocalRandom.current().nextInt(1, maxMoves + 1);
+        int computerMoveCount = 3;
+        for (int i = 0; i < computerMoveCount; ++i){
+            playComputerMove();
+            try {
+                //TimeUnit.SECONDS.sleep(1);
+                Thread.sleep(1000);
+            } catch (InterruptedException ie){
+                System.out.println("Interrupted while Sleeping");
+            }
+            board.print();
+            //gui.clearBoard(board);
+        }
+
+        //gui.clearBoard(board);
+        endTurn();
+    }
+
+    private boolean playComputerMove(){
+        boolean pieceMoved = false;
+
+        Collections.shuffle(computerPieces);
+        for (Piece piece : computerPieces){
+            legalMoves = piece.generateLegalMoves(board);
+            if (!legalMoves.isEmpty()){
+                //System.out.println("X " + piece.piecePositionX + " Y " + piece.piecePositionY);
+                Tile fromTile = board.tiles[piece.piecePositionY][piece.piecePositionX];
+                possibleTiles = generatePossibleTiles(fromTile, legalMoves);
+
+                Random rand = new Random();
+                Tile toTile = possibleTiles.get(rand.nextInt(possibleTiles.size()));
+
+                //gui.setColorComputerFromMove(fromTile.tileSquare);
+                //gui.setColorComputerToMove(toTile.tileSquare);
+
+                movePiece(fromTile, toTile);
+                pieceMoved = true;
+                break;
+            }
+        }
+
+        return pieceMoved;
     }
     private void setTiles(){
         for (int i = 0; i < 8; ++i){
@@ -62,38 +153,153 @@ public class Game {
     }
     private void setTile(Tile tile){
         tile.tileSquare.setOnMouseClicked(e -> {
-            gui.clearBoard(board);
 
-            if (chosenTile != null && possibleTiles.contains(tile)){
-                movePiece(chosenTile, tile);
-
-                if (rabbitOnLastTile(tile.getPiece())){
-                    gui.gameOverScreen(currentPlayer, this);
-                }
-                if (moveCount == maxMoves){
-                    endTurn();
-                }
-
-                chosenTile = null;
-            }
-            else if (tile.isTileOccupied() && currentPlayer == tile.getPiece().getPiecePlayer()){
-                chosenTile = tile;
-
-                legalMoves = tile.getPiece().generateLegalMoves(board);
-                possibleTiles = generatePossibleTiles(tile, legalMoves);
-
+            if (!gameIsOver && (gameType == GameType.versusPlayer || currentPlayer == Player.GOLD)) {
                 gui.clearBoard(board);
-                gui.setColorSelectedPiece(chosenTile.tileSquare);
-                gui.drawLegalMoves(possibleTiles);
-            }
-            else {
-                chosenTile = null;
+
+                if (chosenTile != null && possibleTiles.contains(tile)) {
+                    movePiece(chosenTile, tile);
+
+                    Tile adjacentTileTrapWithFriend = null;
+                    if (shouldRemovePieceOnTile(tile)){
+                        removePieceOnTile(tile);
+                    } else {
+                        adjacentTileTrapWithFriend = findAdjacentTileTrapWithFriend(chosenTile, currentPlayer);
+                    }
+
+                    if (adjacentTileTrapWithFriend != null && shouldRemovePieceOnTile(adjacentTileTrapWithFriend)){
+                        removePieceOnTile(adjacentTileTrapWithFriend);
+                    }
+
+                    moveCount++;
+                    gui.setMoveCounter(moveCount);
+                    if (moveCount == maxMoves) {
+                        endTurn();
+                    }
+
+                    chosenTile = null;
+                } else if (tile.isTileOccupied() && currentPlayer == tile.getPiece().getPiecePlayer() && !isPieceFrozen(tile)) {
+                    chosenTile = tile;
+
+                    legalMoves = tile.getPiece().generateLegalMoves(board);
+                    possibleTiles = generatePossibleTiles(tile, legalMoves);
+
+                    //gui.clearBoard(board);
+                    gui.setColorSelectedPiece(chosenTile.tileSquare);
+                    gui.drawLegalMoves(possibleTiles);
+                } else {
+                    chosenTile = null;
+                }
             }
         });
     }
 
-    private Set<Tile> generatePossibleTiles(Tile startTile, Set<Move> legalMoves){
-        Set<Tile> possibleTiles = new HashSet<>();
+    private boolean shouldRemovePieceOnTile(Tile tile){
+        boolean shouldRemove = false;
+        if (tile.isTrap){
+            shouldRemove = true;
+            for (Tile adjacentTile : tile.adjacentTiles(board)){
+                if (isSamePiecePlayerOnTiles(tile, adjacentTile)){
+                    shouldRemove = false;
+                }
+            }
+        }
+
+        return shouldRemove;
+    }
+
+    private Tile findAdjacentTileTrapWithFriend(Tile tile, Player player){
+        Tile tileTrapWithFriend = null;
+        for (Tile adjacentTile : tile.adjacentTiles(board)){
+            if (adjacentTile.isTrap && adjacentTile.isTileOccupied() && adjacentTile.getPiece().getPiecePlayer() == player){
+                tileTrapWithFriend = adjacentTile;
+                break;
+            }
+        }
+
+        return tileTrapWithFriend;
+    }
+
+    private void removePieceOnTile(Tile tile){
+        Piece piece = tile.getPiece();
+
+        goldRabbitPieces.remove(piece);
+        silverRabbitPieces.remove(piece);
+        computerPieces.remove(piece);
+
+        tile.removePiece();
+    }
+    private boolean isPieceFrozen(Tile tile){
+        List<Tile> adjacentTiles = tile.adjacentTiles(board);
+        boolean isFrozen = false;
+
+        Piece piece = tile.getPiece();
+        Piece adjacentPiece;
+
+        for (Tile adjecantTile : adjacentTiles){
+            if (adjecantTile.isTileOccupied()){
+                adjacentPiece = adjecantTile.getPiece();
+                if (piece.getPiecePlayer() != adjacentPiece.getPiecePlayer() && adjacentPiece.pieceStrength > piece.pieceStrength){
+                    isFrozen = true;
+                    break;
+                }
+            }
+        }
+        for (Tile adjecantTile : adjacentTiles){
+            if (isSamePiecePlayerOnTiles(tile, adjecantTile)){
+                isFrozen = false;
+                break;
+            }
+        }
+
+        return isFrozen;
+    }
+
+    private boolean isSamePiecePlayerOnTiles(Tile tile1, Tile tile2){
+        return tile1.isTileOccupied() && tile2.isTileOccupied() && tile1.getPiece().getPiecePlayer() == tile2.getPiece().getPiecePlayer();
+    }
+
+    private Player checkGameOver(){
+        Player winner = null;
+        Player oppositePlayer = oppositePlayer(currentPlayer);
+
+        Set<Piece> currentPlayerRabbit = currentPlayer == Player.GOLD ? goldRabbitPieces : silverRabbitPieces;
+        Set<Piece> oppositePlayerRabbit = oppositePlayer == Player.GOLD ? goldRabbitPieces : silverRabbitPieces;
+
+        if (rabbitReachedGoal(currentPlayer)){
+            winner = currentPlayer;
+        } else if (rabbitReachedGoal(oppositePlayer)){
+            winner = oppositePlayer;
+        } else if (oppositePlayerRabbit.size() == 0) {
+            winner = currentPlayer;
+        } else if (currentPlayerRabbit.size() == 0) {
+            winner = oppositePlayer;
+        }
+
+        if (winner != null){
+            gameIsOver = true;
+        }
+        return winner;
+    }
+
+    private boolean rabbitReachedGoal(Player player){
+        boolean ret = false;
+
+        int goalPositionY = player == Player.GOLD ? 0 : 7;
+        Set<Piece> rabbitPieces = player == Player.GOLD ? goldRabbitPieces : silverRabbitPieces;
+
+        for (Piece piece : rabbitPieces){
+            if (piece.piecePositionY == goalPositionY){
+                ret = true;
+                break;
+            }
+        }
+
+        return ret;
+    }
+
+    private List<Tile> generatePossibleTiles(Tile startTile, Set<Move> legalMoves){
+        List<Tile> possibleTiles = new ArrayList<>();
 
         int x = startTile.tileCoordinateX;
         int y = startTile.tileCoordinateY;
@@ -114,17 +320,6 @@ public class Game {
         return possibleTiles;
     }
 
-    private boolean rabbitOnLastTile(Piece piece){
-        boolean ret = false;
-        if (piece.isRabbit && currentPlayer == piece.getPiecePlayer()){
-            if ((piece.getPiecePlayer() == Player.GOLD && piece.piecePositionY == 0) ||
-                    (piece.getPiecePlayer() == Player.SILVER && piece.piecePositionY == 7)){
-                ret = true;
-            }
-        }
-        return ret;
-    }
-
     private void movePiece (Tile fromTile, Tile toTile){
         Piece piece = board.tiles[fromTile.tileCoordinateY][fromTile.tileCoordinateX].getPiece();
 
@@ -133,9 +328,10 @@ public class Game {
 
         board.tiles[toTile.tileCoordinateY][toTile.tileCoordinateX].setPiece(piece);
         board.tiles[fromTile.tileCoordinateY][fromTile.tileCoordinateX].setPiece(null);
+    }
 
-        moveCount++;
-        gui.setMoveCounter(moveCount);
+    private Player oppositePlayer(Player player){
+        return player == Player.GOLD ? Player.SILVER : Player.GOLD;
     }
 
     public void generatePiecesPosition(){
@@ -154,13 +350,19 @@ public class Game {
 
                     Piece piece;
                     switch (c) {
-                        case 'R' -> piece = new Rabbit(x, y, Player.SILVER);
+                        case 'R' -> {
+                            piece = new Rabbit(x, y, Player.SILVER);
+                            silverRabbitPieces.add(piece);
+                        }
                         case 'C' -> piece = new SpecialPiece.Cat(x, y, Player.SILVER);
                         case 'D' -> piece = new SpecialPiece.Dog(x, y, Player.SILVER);
                         case 'H' -> piece = new SpecialPiece.Horse(x, y, Player.SILVER);
                         case 'L' -> piece = new SpecialPiece.Camel(x, y, Player.SILVER);
                         case 'E' -> piece = new SpecialPiece.Elephant(x, y, Player.SILVER);
-                        case 'r' -> piece = new Rabbit(x, y, Player.GOLD);
+                        case 'r' -> {
+                            piece = new Rabbit(x, y, Player.GOLD);
+                            goldRabbitPieces.add(piece);
+                        }
                         case 'c' -> piece = new SpecialPiece.Cat(x, y, Player.GOLD);
                         case 'd' -> piece = new SpecialPiece.Dog(x, y, Player.GOLD);
                         case 'h' -> piece = new SpecialPiece.Horse(x, y, Player.GOLD);
@@ -171,6 +373,11 @@ public class Game {
 
                     Tile tile = board.tiles[y][x];
                     tile.setPiece(piece);
+
+                    if (gameType == GameType.versusComputer && piece != null && piece.getPiecePlayer() == Player.SILVER){
+                        computerPieces.add(piece);
+                        //System.out.println("COM PIECE ADDED");
+                    }
                 }
                 y++;
             }
