@@ -16,7 +16,6 @@ public class ArimaaApplication extends Application {
         Game game = new Game(board, gui);
 
         gui.createMenuScene(game);
-        gui.createGameScene(board, game);
 
         gui.setStageMenu();
         gui.showStage();

@@ -11,7 +11,7 @@ public abstract class Piece {
     public int piecePositionX;
     public int piecePositionY;
     protected Player piecePlayer;
-    protected int pieceStrength;
+    public int pieceStrength;
     public char c;
     public boolean isRabbit;
 

@@ -10,11 +10,13 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
+import java.util.List;
 import java.util.Set;
 
 public class GUI {
 
-    private GridPane menuGrid, gameGrid;
+    private final GridPane menuGrid;
+    private GridPane gameGrid;
     private Scene menuScene, gameScene;
     private Label moveCountLabel, currentPlayerLabel;
 
@@ -26,12 +28,17 @@ public class GUI {
 
     private final Color selectedPieceColor = Color.LIGHTBLUE;
     private final Color legalMovesColor = Color.LIGHTGREEN;
+    private final Color computerFromMoveColor = Color.RED;
+    private final Color computerToMoveColor = Color.YELLOW;
+
+    Stopwatch goldPlayerStopwatch;
+    Stopwatch silverPlayerStopwatch;
 
     Stage mainStage;
     public GUI(Stage mainStage) {
         this.mainStage = mainStage;
         menuGrid = new GridPane();
-        gameGrid = new GridPane();
+        //gameGrid = new GridPane();
     }
 
     public void setStageMenu(){
@@ -52,21 +59,28 @@ public class GUI {
     }
 
     public void createMenuScene(Game game){
-        Button startButton;
+        Button versusPlayerButton, versusComputerButton;
         Label menuLabel;
 
         menuLabel = new Label("Menu");
 
-        startButton = new Button("Player VS Player");
-        startButton.setOnAction(e -> {
-            game.startAgainstPlayer();
+        versusPlayerButton = new Button("Player VS Player");
+        versusPlayerButton.setOnAction(e -> {
+            game.startVersusPlayer();
             mainStage.setScene(gameScene);
         });
 
-        GridPane.setConstraints(startButton, 0, 5);
-        GridPane.setConstraints(menuLabel, 0, 0);
+        versusComputerButton = new Button("Player VS Computer");
+        versusComputerButton.setOnAction(e -> {
+            game.startVersusComputer();
+            mainStage.setScene(gameScene);
+        });
 
-        menuGrid.getChildren().addAll(menuLabel, startButton);
+        GridPane.setConstraints(menuLabel, 0, 0);
+        GridPane.setConstraints(versusPlayerButton, 0, 5);
+        GridPane.setConstraints(versusComputerButton, 0, 6);
+
+        menuGrid.getChildren().addAll(menuLabel, versusPlayerButton, versusComputerButton);
         menuGrid.setAlignment(Pos.CENTER);
 
         menuScene = new Scene(menuGrid, mainStageWidth, mainStageHeight);
@@ -74,22 +88,29 @@ public class GUI {
 
     public void createGameScene(Board board, Game game){
         Button backButton, endTurnButton;
+        Label goldPlayerStopwatchLabel;
 
         backButton = new Button("Back to menu");
         backButton.setOnAction(e -> mainStage.setScene(menuScene));
 
         endTurnButton = new Button("End turn");
         endTurnButton.setOnAction(e -> {
-            game.endTurn();
+            if (game.moveCount > 0){
+                game.endTurn();
+            }
         });
 
         moveCountLabel = new Label();
         currentPlayerLabel = new Label();
+        goldPlayerStopwatchLabel = new Label("Gold player:");
+        goldPlayerStopwatch = new Stopwatch();
 
         GridPane.setConstraints(backButton, 10 , 0);
         GridPane.setConstraints(endTurnButton, 10 , 1);
         GridPane.setConstraints(moveCountLabel, 10 , 2);
         GridPane.setConstraints(currentPlayerLabel, 10 , 3);
+        GridPane.setConstraints(goldPlayerStopwatchLabel, 10, 4);
+        GridPane.setConstraints(goldPlayerStopwatch.timeText, 10, 5);
 
         setGameGrid();
 
@@ -98,17 +119,35 @@ public class GUI {
         setPieces(board);
 
         gameGrid.getChildren().addAll(backButton, endTurnButton, moveCountLabel, currentPlayerLabel);
+        gameGrid.getChildren().addAll(goldPlayerStopwatchLabel, goldPlayerStopwatch.timeText);
+
+        if (game.gameType == GameType.versusPlayer){
+            setSilverPlayerStopwatch();
+        }
+
         gameScene = new Scene(gameGrid, mainStageWidth, mainStageHeight);
+    }
+
+    private void setSilverPlayerStopwatch() {
+        Label silverPlayerStopwatchLabel;
+        System.out.println("SILVER STOPWATCH SET");
+        silverPlayerStopwatchLabel = new Label("Silver player:");
+        silverPlayerStopwatch = new Stopwatch();
+        GridPane.setConstraints(silverPlayerStopwatchLabel, 10, 6);
+        GridPane.setConstraints(silverPlayerStopwatch.timeText, 10, 7);
+        gameGrid.getChildren().addAll(silverPlayerStopwatchLabel, silverPlayerStopwatch.timeText);
     }
 
     public void setMoveCounter(int moveCount){
         moveCountLabel.setText(Integer.toString(moveCount));
     }
     public void setCurrentPlayer(Player currentPlayer){
-        currentPlayerLabel.setText(currentPlayer == Player.GOLD ? "Gold" : "Silver");
+        String currentPlayerString = currentPlayer == Player.GOLD ? "Gold" : "Silver";
+        currentPlayerLabel.setText("Current player: " + currentPlayerString);
     }
 
     private void setGameGrid(){
+        gameGrid = new GridPane();
         gameGrid.setPadding(new Insets(10, 10, 10,10));
         gameGrid.setVgap(8);
         gameGrid.setHgap(10);
@@ -124,10 +163,7 @@ public class GUI {
         }
     }
 
-    public void setColorLegalMove(Rectangle tileSquare){
-        tileSquare.setFill(legalMovesColor);
-    }
-    public void drawLegalMoves(Set<Tile> legalMoves){
+    public void drawLegalMoves(List<Tile> legalMoves){
         for (Tile legalMove : legalMoves){
             setColorLegalMove(legalMove.tileSquare);
         }
@@ -135,6 +171,17 @@ public class GUI {
     public void setColorSelectedPiece(Rectangle tileSquare){
         tileSquare.setFill(selectedPieceColor);
     }
+    public void setColorLegalMove(Rectangle tileSquare){
+        tileSquare.setFill(legalMovesColor);
+    }
+    public void setColorComputerFromMove(Rectangle tileSquare){
+        tileSquare.setFill(computerFromMoveColor);
+    }
+    public void setColorComputerToMove(Rectangle tileSquare){
+        tileSquare.setFill(computerToMoveColor);
+    }
+
+
     public void clearBoard(Board board){
         Rectangle tileSquare;
         for (int i = 0; i < 8; ++i){
@@ -149,6 +196,8 @@ public class GUI {
     }
 
     public void gameOverScreen(Player winner, Game game){
+        Button versusPlayerButton, versusComputerButton;
+
         GridPane gameOverGrid = new GridPane();
         Stage gameOverStage = new Stage();
 
@@ -156,11 +205,20 @@ public class GUI {
         String winnerString = winner == Player.GOLD ? "GOLD" : "SILVER";
         Label winnerLabel = new Label("WINNER IS " + winnerString);
 
-        Button restartButton = new Button("Player VS Player");
-        restartButton.setOnAction(e ->{
-            game.startAgainstPlayer();
+        versusPlayerButton = new Button("Player VS Player");
+        versusPlayerButton.setOnAction(e ->{
+            game.startVersusPlayer();
+            mainStage.setScene(gameScene);
             gameOverStage.hide();
         });
+
+        versusComputerButton = new Button("Player VS Computer");
+        versusComputerButton.setOnAction(e ->{
+            game.startVersusComputer();
+            mainStage.setScene(gameScene);
+            gameOverStage.hide();
+        });
+
 
         Button quitButton = new Button("QUIT");
         quitButton.setOnAction(e ->{
@@ -170,10 +228,11 @@ public class GUI {
 
         GridPane.setConstraints(gameOverLabel, 0, 0);
         GridPane.setConstraints(winnerLabel, 0, 3);
-        GridPane.setConstraints(restartButton, 0, 4);
-        GridPane.setConstraints(quitButton, 0, 5);
+        GridPane.setConstraints(versusPlayerButton, 0, 4);
+        GridPane.setConstraints(versusComputerButton, 0, 5);
+        GridPane.setConstraints(quitButton, 0, 6);
 
-        gameOverGrid.getChildren().addAll(gameOverLabel, winnerLabel, restartButton, quitButton);
+        gameOverGrid.getChildren().addAll(gameOverLabel, winnerLabel, versusPlayerButton, versusComputerButton, quitButton);
         gameOverGrid.setAlignment(Pos.CENTER);
 
         Scene gameOverScene = new Scene(gameOverGrid, gameOverStageWidth, gameOverStageHeight);

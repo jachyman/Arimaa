@@ -4,6 +4,9 @@ import com.arimaa.pieces.Piece;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Tile {
 
     final public int tileCoordinateX;
@@ -36,6 +39,29 @@ public class Tile {
             pieceString = piece.c + "-" + color;
         }
         pieceText.setText(pieceString);
+    }
+
+    public List<Tile> adjacentTiles(Board board){
+        List<Tile> tiles = new ArrayList<>();
+        if (tileCoordinateY > 0){
+            tiles.add(board.tiles[tileCoordinateY - 1][tileCoordinateX]);
+        }
+        if (tileCoordinateY < 7){
+            tiles.add(board.tiles[tileCoordinateY + 1][tileCoordinateX]);
+        }
+        if (tileCoordinateX > 0){
+            tiles.add(board.tiles[tileCoordinateY][tileCoordinateX - 1]);
+        }
+        if (tileCoordinateX < 7){
+            tiles.add(board.tiles[tileCoordinateY][tileCoordinateX + 1]);
+        }
+
+        return tiles;
+    }
+
+    public void removePiece(){
+        piece = null;
+        pieceText.setText("");
     }
 }
 
