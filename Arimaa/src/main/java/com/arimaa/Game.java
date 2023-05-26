@@ -3,15 +3,12 @@ package com.arimaa;
 import com.arimaa.pieces.Piece;
 import com.arimaa.pieces.Rabbit;
 import com.arimaa.pieces.SpecialPiece;
-import javafx.scene.paint.Color;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 
 public class Game {
 
@@ -20,14 +17,23 @@ public class Game {
     private final GUI gui;
 
     public GameType gameType;
-    private Tile chosenTile;
+    private Tile selectedTile;
 
     private List<Piece> computerPieces;
     private Set<Piece> goldRabbitPieces;
     private Set<Piece> silverRabbitPieces;
 
-    private Set<Move> legalMoves;
-    private List<Tile> possibleTiles;
+    //private Set<Move> legalMoves;
+    //private List<Tile> possibleTiles;
+
+    private Set<Tile> movementTiles;
+    private Set<Tile> pushFromTiles;
+    private Set<Tile> pushToTiles;
+    private Set<Tile> pullFromTiles;
+    private Tile pullToTile;
+    private Tile pushFromTile;
+    private Tile finishPushTile;
+    private Tile pushingTile;
 
     private boolean gameIsOver;
     public int moveCount;
@@ -56,11 +62,13 @@ public class Game {
 
         currentPlayer = Player.GOLD;
         moveCount = 0;
-        chosenTile = null;
+        selectedTile = null;
         gameIsOver = false;
 
         goldRabbitPieces = new HashSet<>();
         silverRabbitPieces = new HashSet<>();
+
+        setTileSets();
 
         gui.setMoveCounter(moveCount);
         gui.setCurrentPlayer(currentPlayer);
@@ -70,6 +78,8 @@ public class Game {
     public void endTurn(){
         Player winner = checkGameOver();
         if (gameIsOver){
+            gui.goldPlayerStopwatch.pause();
+            gui.silverPlayerStopwatch.pause();
             gui.gameOverScreen(winner, this);
         }
         else {
@@ -80,9 +90,61 @@ public class Game {
             gui.setCurrentPlayer(currentPlayer);
 
             if (gameType == GameType.versusComputer && currentPlayer == Player.SILVER) {
-                playComputerTurn();
+                //playComputerTurn();
             }
         }
+        setTileSets();
+        gui.clearBoard(board);
+    }
+
+    private void setTileSets(){
+        movementTiles = new HashSet<>();
+        pushFromTiles = new HashSet<>();
+        pushToTiles = new HashSet<>();
+        pullFromTiles = new HashSet<>();
+        pullToTile = null;
+        finishPushTile = null;
+        pushingTile = null;
+    }
+
+    private void movement(Tile fromTile, Tile toTile){
+        pullToTile = fromTile;
+        generatePullFromTiles(fromTile);
+        gui.fillTiles(pullFromTiles, gui.pullFromColor);
+        gui.fillTile(fromTile, gui.previousPiecePositonColor);
+        movePiece(fromTile, toTile);
+    }
+
+    private void generateMovementTiles(Tile tile){
+        movementTiles = tile.getPiece().getLegalMovementTiles(board);
+    }
+
+    private void generatePullFromTiles(Tile tile){
+        Piece piece, adjacentPiece;
+        piece = tile.getPiece();
+        pullFromTiles.clear();
+        for (Tile adjacentOccupiedTile : tile.adjacentOccupiedTiles(board)){
+            adjacentPiece = adjacentOccupiedTile.getPiece();
+            if (piece.getPiecePlayer() != adjacentPiece.getPiecePlayer() && piece.pieceStrength > adjacentPiece.pieceStrength){
+                pullFromTiles.add(adjacentOccupiedTile);
+            }
+        }
+    }
+    private void generatePushFromTiles(Tile tile){
+        Piece piece, adjacentPiece;
+        piece = tile.getPiece();
+        pushFromTiles.clear();
+        for (Tile adjacentOccupiedTile : tile.adjacentOccupiedTiles(board)){
+            adjacentPiece = adjacentOccupiedTile.getPiece();
+            if (piece.getPiecePlayer() != adjacentPiece.getPiecePlayer() && piece.pieceStrength > adjacentPiece.pieceStrength){
+                pushFromTiles.add(adjacentOccupiedTile);
+            }
+        }
+    }
+
+    private void generatePushToTiles(Tile tile){
+        pushToTiles.clear();
+        pushToTiles.addAll(tile.adjacentFreeTiles(board));
     }
 
     private void switchStopwatch(){
@@ -99,6 +161,7 @@ public class Game {
         }
     }
 
+    /*
     private void playComputerTurn(){
         //int computerMoveCount = ThreadLocalRandom.current().nextInt(1, maxMoves + 1);
         int computerMoveCount = 3;
@@ -117,6 +180,7 @@ public class Game {
         //gui.clearBoard(board);
         endTurn();
     }
+
 
     private boolean playComputerMove(){
         boolean pieceMoved = false;
@@ -143,6 +207,8 @@ public class Game {
 
         return pieceMoved;
     }
+
+     */
     private void setTiles(){
         for (int i = 0; i < 8; ++i){
             for (int j = 0; j < 8; ++j){
@@ -156,42 +222,116 @@ public class Game {
 
             if (!gameIsOver && (gameType == GameType.versusPlayer || currentPlayer == Player.GOLD)) {
                 gui.clearBoard(board);
+                drawPullTiles();
 
-                if (chosenTile != null && possibleTiles.contains(tile)) {
-                    movePiece(chosenTile, tile);
-
-                    Tile adjacentTileTrapWithFriend = null;
-                    if (shouldRemovePieceOnTile(tile)){
-                        removePieceOnTile(tile);
-                    } else {
-                        adjacentTileTrapWithFriend = findAdjacentTileTrapWithFriend(chosenTile, currentPlayer);
+                if (!isPushFinished()){
+                    gui.fillTile(pushingTile, gui.pushingTileColor);
+                    gui.fillTile(finishPushTile, gui.finishPushTileColor);
+                    if (tile == finishPushTile){
+                        movePiece(pushingTile, finishPushTile);
+                        finishPushTile = null;
+                        increaseMoveCount();
+                        gui.clearBoard(board);
                     }
+                } else if (selectedTile != null && movementTiles.contains(tile)) {
+                    movement(selectedTile, tile);
+                    handleTraps(selectedTile, tile);
 
-                    if (adjacentTileTrapWithFriend != null && shouldRemovePieceOnTile(adjacentTileTrapWithFriend)){
-                        removePieceOnTile(adjacentTileTrapWithFriend);
+                    increaseMoveCount();
+                    gui.clearBoard(board);
+                    drawPullTiles();
+
+                    selectedTile = null;
+                } else if (canBeMoved(tile)) {
+                    selectedTile = tile;
+
+                    if (moveCount < 3){
+                        pushingTile = tile;
+                        generatePushFromTiles(tile);
+                        gui.fillTiles(pushFromTiles, gui.pushFromColor);
                     }
+                    generateMovementTiles(tile);
 
-                    moveCount++;
-                    gui.setMoveCounter(moveCount);
-                    if (moveCount == maxMoves) {
-                        endTurn();
-                    }
+                    gui.fillTile(selectedTile, gui.selectedTileColor);
+                    gui.fillTiles(movementTiles, gui.movemetToColor);
+                } else if (canBePulled(tile)){
+                    pullPiece(tile, pullToTile);
+                    increaseMoveCount();
+                } else if (canBePushed(tile)){
+                    generatePushToTiles(tile);
+                    pushFromTile = tile;
+                    gui.fillTiles(pushToTiles, gui.pushToTileColor);
+                } else if (pushFromTile != null && pushToTiles.contains(tile)){
+                    pushPiece(pushFromTile, tile);
+                    finishPushTile = pushFromTile;
+                    gui.fillTile(pushingTile, gui.pushingTileColor);
+                    gui.fillTile(finishPushTile, gui.finishPushTileColor);
 
-                    chosenTile = null;
-                } else if (tile.isTileOccupied() && currentPlayer == tile.getPiece().getPiecePlayer() && !isPieceFrozen(tile)) {
-                    chosenTile = tile;
+                    increaseMoveCount();
+                }
+                else {
+                    selectedTile = null;
+                }
 
-                    legalMoves = tile.getPiece().generateLegalMoves(board);
-                    possibleTiles = generatePossibleTiles(tile, legalMoves);
-
-                    //gui.clearBoard(board);
-                    gui.setColorSelectedPiece(chosenTile.tileSquare);
-                    gui.drawLegalMoves(possibleTiles);
-                } else {
-                    chosenTile = null;
+                if (moveCount == maxMoves) {
+                    endTurn();
                 }
             }
         });
+    }
+
+    private boolean isPushFinished(){
+        return finishPushTile == null;
+    }
+
+    private void increaseMoveCount(){
+        moveCount++;
+        gui.setMoveCounter(moveCount);
+    }
+    private void drawPullTiles(){
+        if (pullToTile != null){
+            gui.fillTile(pullToTile, gui.pullToTileColor);
+        }
+        gui.fillTiles(pullFromTiles, gui.pullFromColor);
+    }
+
+    private void pullPiece(Tile fromTile, Tile toTile){
+        movePiece(fromTile, toTile);
+        handleTraps(fromTile, toTile);
+        pullToTile = null;
+        pullFromTiles.clear();
+        gui.clearBoard(board);
+    }
+
+    private void pushPiece(Tile fromTile, Tile toTile){
+        movePiece(fromTile, toTile);
+        handleTraps(fromTile, toTile);
+        finishPushTile = fromTile;
+        pushToTiles.clear();
+        gui.clearBoard(board);
+    }
+
+    private void handleTraps(Tile fromTile, Tile toTile){
+        Tile adjacentTileTrapWithFriend = null;
+        if (shouldRemovePieceOnTile(toTile)){
+            removePieceOnTile(toTile);
+        } else {
+            adjacentTileTrapWithFriend = findAdjacentTileTrapWithFriend(fromTile, toTile.getPiece().getPiecePlayer());
+        }
+
+        if (adjacentTileTrapWithFriend != null && shouldRemovePieceOnTile(adjacentTileTrapWithFriend)){
+            removePieceOnTile(adjacentTileTrapWithFriend);
+        }
+    }
+
+    private boolean canBeMoved(Tile tile){
+        return tile.isTileOccupied() && currentPlayer == tile.getPiece().getPiecePlayer() && !isPieceFrozen(tile);
+    }
+    private boolean canBePulled(Tile tile){
+        return pullToTile != null && pullFromTiles.contains(tile);
+    }
+    private boolean canBePushed(Tile tile){
+        return moveCount < 3 && pushFromTiles.contains(tile);
     }
 
     private boolean shouldRemovePieceOnTile(Tile tile){
@@ -210,8 +350,9 @@ public class Game {
 
     private Tile findAdjacentTileTrapWithFriend(Tile tile, Player player){
         Tile tileTrapWithFriend = null;
-        for (Tile adjacentTile : tile.adjacentTiles(board)){
-            if (adjacentTile.isTrap && adjacentTile.isTileOccupied() && adjacentTile.getPiece().getPiecePlayer() == player){
+        //for (Tile adjacentTile : tile.adjacentTiles(board)){
+        for (Tile adjacentTile : tile.adjacentOccupiedTiles(board)){
+            if (adjacentTile.isTrap && adjacentTile.getPiece().getPiecePlayer() == player){
                 tileTrapWithFriend = adjacentTile;
                 break;
             }
@@ -230,22 +371,21 @@ public class Game {
         tile.removePiece();
     }
     private boolean isPieceFrozen(Tile tile){
-        List<Tile> adjacentTiles = tile.adjacentTiles(board);
+        //List<Tile> adjacentTiles = tile.adjacentTiles(board);
+        List<Tile> adjacentOccupiedTiles = tile.adjacentOccupiedTiles(board);
         boolean isFrozen = false;
 
         Piece piece = tile.getPiece();
         Piece adjacentPiece;
 
-        for (Tile adjecantTile : adjacentTiles){
-            if (adjecantTile.isTileOccupied()){
-                adjacentPiece = adjecantTile.getPiece();
-                if (piece.getPiecePlayer() != adjacentPiece.getPiecePlayer() && adjacentPiece.pieceStrength > piece.pieceStrength){
-                    isFrozen = true;
-                    break;
-                }
+        for (Tile adjecantTile : adjacentOccupiedTiles){
+            adjacentPiece = adjecantTile.getPiece();
+            if (piece.getPiecePlayer() != adjacentPiece.getPiecePlayer() && adjacentPiece.pieceStrength > piece.pieceStrength){
+                isFrozen = true;
+                break;
             }
         }
-        for (Tile adjecantTile : adjacentTiles){
+        for (Tile adjecantTile : adjacentOccupiedTiles){
             if (isSamePiecePlayerOnTiles(tile, adjecantTile)){
                 isFrozen = false;
                 break;
@@ -296,28 +436,6 @@ public class Game {
         }
 
         return ret;
-    }
-
-    private List<Tile> generatePossibleTiles(Tile startTile, Set<Move> legalMoves){
-        List<Tile> possibleTiles = new ArrayList<>();
-
-        int x = startTile.tileCoordinateX;
-        int y = startTile.tileCoordinateY;
-
-        if (legalMoves.contains(Move.UP)){
-            possibleTiles.add(board.tiles[y-1][x]);
-        }
-        if (legalMoves.contains(Move.DOWN)){
-            possibleTiles.add(board.tiles[y+1][x]);
-        }
-        if (legalMoves.contains(Move.LEFT)){
-            possibleTiles.add(board.tiles[y][x-1]);
-        }
-        if (legalMoves.contains(Move.RIGHT)){
-            possibleTiles.add(board.tiles[y][x+1]);
-        }
-
-        return possibleTiles;
     }
 
     private void movePiece (Tile fromTile, Tile toTile){

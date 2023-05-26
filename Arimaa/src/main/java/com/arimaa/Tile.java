@@ -5,6 +5,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class Tile {
@@ -56,6 +57,18 @@ public class Tile {
             tiles.add(board.tiles[tileCoordinateY][tileCoordinateX + 1]);
         }
 
+        return tiles;
+    }
+
+    public List<Tile> adjacentOccupiedTiles(Board board){
+        List<Tile> tiles = adjacentTiles(board);
+        tiles.removeIf(adjacentTile -> !adjacentTile.isTileOccupied());
+        return tiles;
+    }
+
+    public List<Tile> adjacentFreeTiles(Board board){
+        List<Tile> tiles = adjacentTiles(board);
+        tiles.removeIf(Tile::isTileOccupied);
         return tiles;
     }
 

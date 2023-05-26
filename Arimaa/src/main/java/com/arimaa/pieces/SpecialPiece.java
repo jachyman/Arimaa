@@ -1,15 +1,13 @@
 package com.arimaa.pieces;
 
-import com.arimaa.Board;
-import com.arimaa.Move;
-import com.arimaa.Player;
+import com.arimaa.*;
 
 import java.util.HashSet;
 import java.util.Set;
 
 public class SpecialPiece extends Piece {
 
-    private final static int[] CANDIDATE_MOVE_COORDINATES = {-8, -1, 1, 8};
+    public final static int[] CANDIDATE_MOVE_COORDINATES = {-8, -1, 1, 8};
 
     public SpecialPiece(int piecePositionX, int piecePositionY, Player piecePlayer) {
         super(piecePositionX, piecePositionY, piecePlayer);
@@ -17,22 +15,11 @@ public class SpecialPiece extends Piece {
     }
 
     @Override
-    public Set<Move> generateLegalMoves(Board board) {
-        Set<Move> moves = new HashSet<>();
-        if (piecePositionY > 0 && !board.tiles[piecePositionY - 1][piecePositionX].isTileOccupied()){
-            moves.add(Move.UP);
-        }
-        if (piecePositionY < 7 && !board.tiles[piecePositionY + 1][piecePositionX].isTileOccupied()){
-            moves.add(Move.DOWN);
-        }
-        if (piecePositionX > 0 && !board.tiles[piecePositionY][piecePositionX - 1].isTileOccupied()){
-            moves.add(Move.LEFT);
-        }
-        if (piecePositionX < 7 && !board.tiles[piecePositionY][piecePositionX + 1].isTileOccupied()){
-            moves.add(Move.RIGHT);
-        }
-
-        return moves;
+    protected void setPieceMovement() {
+        pieceMovement.add(Direction.LEFT);
+        pieceMovement.add(Direction.RIGHT);
+        pieceMovement.add(Direction.UP);
+        pieceMovement.add(Direction.DOWN);
     }
 
     public static class Cat extends SpecialPiece {

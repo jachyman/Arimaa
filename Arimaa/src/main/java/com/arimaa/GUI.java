@@ -10,7 +10,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
-import java.util.List;
 import java.util.Set;
 
 public class GUI {
@@ -26,10 +25,18 @@ public class GUI {
     private final int gameOverStageWidth = 300;
     private final int gameOverStageHeight = 300;
 
-    private final Color selectedPieceColor = Color.LIGHTBLUE;
-    private final Color legalMovesColor = Color.LIGHTGREEN;
-    private final Color computerFromMoveColor = Color.RED;
-    private final Color computerToMoveColor = Color.YELLOW;
+    public final Color selectedTileColor = Color.LIGHTBLUE;
+    public final Color movemetToColor = Color.LIGHTGREEN;
+    public final Color computerFromMoveColor = Color.RED;
+    public final Color computerToMoveColor = Color.YELLOW;
+    public final Color pullFromColor = Color.LIGHTYELLOW;
+    public final Color pushFromColor = Color.LIGHTPINK;
+    public final Color pushToTileColor = Color.LIGHTPINK;
+    public final Color previousPiecePositonColor = Color.LIGHTCYAN;
+
+    public final Color pushingTileColor = selectedTileColor;
+    public final Color finishPushTileColor = movemetToColor;
+    public final Color pullToTileColor = previousPiecePositonColor;
 
     Stopwatch goldPlayerStopwatch;
     Stopwatch silverPlayerStopwatch;
@@ -102,7 +109,7 @@ public class GUI {
 
         moveCountLabel = new Label();
         currentPlayerLabel = new Label();
-        goldPlayerStopwatchLabel = new Label("Gold player:");
+        goldPlayerStopwatchLabel = new Label("Gold player time:");
         goldPlayerStopwatch = new Stopwatch();
 
         GridPane.setConstraints(backButton, 10 , 0);
@@ -130,8 +137,7 @@ public class GUI {
 
     private void setSilverPlayerStopwatch() {
         Label silverPlayerStopwatchLabel;
-        System.out.println("SILVER STOPWATCH SET");
-        silverPlayerStopwatchLabel = new Label("Silver player:");
+        silverPlayerStopwatchLabel = new Label("Silver player time:");
         silverPlayerStopwatch = new Stopwatch();
         GridPane.setConstraints(silverPlayerStopwatchLabel, 10, 6);
         GridPane.setConstraints(silverPlayerStopwatch.timeText, 10, 7);
@@ -139,7 +145,7 @@ public class GUI {
     }
 
     public void setMoveCounter(int moveCount){
-        moveCountLabel.setText(Integer.toString(moveCount));
+        moveCountLabel.setText("Moves made: " + Integer.toString(moveCount));
     }
     public void setCurrentPlayer(Player currentPlayer){
         String currentPlayerString = currentPlayer == Player.GOLD ? "Gold" : "Silver";
@@ -163,24 +169,15 @@ public class GUI {
         }
     }
 
-    public void drawLegalMoves(List<Tile> legalMoves){
-        for (Tile legalMove : legalMoves){
-            setColorLegalMove(legalMove.tileSquare);
+    public void fillTiles(Set<Tile> tiles, Color color){
+        for (Tile tile : tiles){
+            tile.tileSquare.setFill(color);
         }
     }
-    public void setColorSelectedPiece(Rectangle tileSquare){
-        tileSquare.setFill(selectedPieceColor);
-    }
-    public void setColorLegalMove(Rectangle tileSquare){
-        tileSquare.setFill(legalMovesColor);
-    }
-    public void setColorComputerFromMove(Rectangle tileSquare){
-        tileSquare.setFill(computerFromMoveColor);
-    }
-    public void setColorComputerToMove(Rectangle tileSquare){
-        tileSquare.setFill(computerToMoveColor);
-    }
 
+    public void fillTile(Tile tile, Color color){
+        tile.tileSquare.setFill(color);
+    }
 
     public void clearBoard(Board board){
         Rectangle tileSquare;
