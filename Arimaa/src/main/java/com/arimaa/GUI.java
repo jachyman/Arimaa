@@ -1,5 +1,9 @@
 package com.arimaa;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -9,6 +13,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.util.Set;
 
@@ -102,7 +107,7 @@ public class GUI {
 
         endTurnButton = new Button("End turn");
         endTurnButton.setOnAction(e -> {
-            if (game.moveCount > 0){
+            if (game.setupPhase || game.moveCount > 0){
                 game.endTurn();
             }
         });
@@ -241,5 +246,23 @@ public class GUI {
 
     public void showStage(){
         mainStage.show();
+    }
+
+    public void delayComputerMoves(Game game, int computerMoveCount, int secondsPerMove){
+        Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(secondsPerMove), new EventHandler<>() {
+            private int moves = 0;
+            @Override
+            public void handle(ActionEvent event) {
+                clearBoard(game.board);
+                if (moves == computerMoveCount) {
+                    game.endTurn();
+                } else {
+                    game.playComputerMove();
+                }
+                moves++;
+            }
+        }));
+        timeline.setCycleCount(computerMoveCount + 1);
+        timeline.play();
     }
 }
