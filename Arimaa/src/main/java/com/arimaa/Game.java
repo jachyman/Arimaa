@@ -9,10 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 
 public class Game {
 
@@ -23,10 +20,10 @@ public class Game {
     public GameType gameType;
     private Tile selectedTile;
 
-    private List<Piece> computerPieces;
-    private Set<Piece> goldRabbitPieces;
-    private Set<Piece> silverRabbitPieces;
-
+    private List<Piece> goldRabbitPieces;
+    private List<Piece> silverRabbitPieces;
+    private List<Piece> goldPieces;
+    private List<Piece> silverPieces;
 
     private Set<Tile> movementTiles;
     private Set<Tile> pushFromTiles;
@@ -45,7 +42,6 @@ public class Game {
     public Game(Board board, GUI gui) {
         this.board = board;
         this.gui = gui;
-        computerPieces = new ArrayList<>();
     }
 
     public void startVersusPlayer(){
@@ -65,8 +61,10 @@ public class Game {
         gameIsOver = false;
         setupPhase = true;
 
-        goldRabbitPieces = new HashSet<>();
-        silverRabbitPieces = new HashSet<>();
+        goldRabbitPieces = new ArrayList<>();
+        silverRabbitPieces = new ArrayList<>();
+        goldPieces = new ArrayList<>();
+        silverPieces = new ArrayList<>();
 
         setTileSets();
         generatePiecesPosition();
@@ -125,7 +123,7 @@ public class Game {
 
                     if (moveCount < 3){
                         pushingTile = tile;
-                        generatePushFromTiles(tile);
+                        pushFromTiles = generatePushFromTiles(tile);
                         gui.fillTiles(pushFromTiles, gui.pushFromColor);
                     }
                     generateMovementTiles(tile);
@@ -240,16 +238,19 @@ public class Game {
             }
         }
     }
-    private void generatePushFromTiles(Tile tile){
+    private Set<Tile> generatePushFromTiles(Tile tile){
         Piece piece, adjacentPiece;
         piece = tile.getPiece();
-        pushFromTiles.clear();
+        Set<Tile> tiles = new HashSet<>();
+        //pushFromTiles.clear();
         for (Tile adjacentOccupiedTile : tile.adjacentOccupiedTiles(board)){
             adjacentPiece = adjacentOccupiedTile.getPiece();
             if (piece.getPiecePlayer() != adjacentPiece.getPiecePlayer() && piece.pieceStrength > adjacentPiece.pieceStrength){
-                pushFromTiles.add(adjacentOccupiedTile);
+                //pushFromTiles.add(adjacentOccupiedTile);
+                tiles.add(adjacentOccupiedTile);
             }
         }
+        return tiles;
     }
     private void generatePushToTiles(Tile tile){
         pushToTiles.clear();
@@ -285,7 +286,8 @@ public class Game {
 
         goldRabbitPieces.remove(piece);
         silverRabbitPieces.remove(piece);
-        computerPieces.remove(piece);
+        goldPieces.remove(piece);
+        silverPieces.remove(piece);
 
         tile.removePiece();
     }
@@ -312,11 +314,9 @@ public class Game {
     }
 
 
-    public boolean playComputerMove(){
-        boolean pieceMoved = false;
-
-        Collections.shuffle(computerPieces);
-        for (Piece piece : computerPieces){
+    public void playComputerMove(){
+        Collections.shuffle(silverPieces);
+        for (Piece piece : silverPieces){
             movementTiles = piece.getLegalMovementTiles(board);
             if (!movementTiles.isEmpty()){
                 Tile fromTile = board.tiles[piece.piecePositionY][piece.piecePositionX];
@@ -327,12 +327,9 @@ public class Game {
                 handleTraps(fromTile, toTile);
                 gui.fillTile(fromTile, gui.selectedTileColor);
                 gui.fillTile(toTile, gui.movemetToColor);
-                pieceMoved = true;
                 break;
             }
         }
-
-        return pieceMoved;
     }
 
     private Tile randomTile(Set<Tile> tiles){
@@ -423,8 +420,8 @@ public class Game {
         Player winner = null;
         Player oppositePlayer = oppositePlayer(currentPlayer);
 
-        Set<Piece> currentPlayerRabbit = currentPlayer == Player.GOLD ? goldRabbitPieces : silverRabbitPieces;
-        Set<Piece> oppositePlayerRabbit = oppositePlayer == Player.GOLD ? goldRabbitPieces : silverRabbitPieces;
+        List<Piece> currentPlayerRabbit = currentPlayer == Player.GOLD ? goldRabbitPieces : silverRabbitPieces;
+        List<Piece> oppositePlayerRabbit = oppositePlayer == Player.GOLD ? goldRabbitPieces : silverRabbitPieces;
 
         if (rabbitReachedGoal(currentPlayer)){
             winner = currentPlayer;
@@ -434,6 +431,8 @@ public class Game {
             winner = currentPlayer;
         } else if (currentPlayerRabbit.size() == 0) {
             winner = oppositePlayer;
+        } else if (!hasPossibleMoves(oppositePlayer)) {
+            winner = currentPlayer;
         }
 
         if (winner != null){
@@ -442,11 +441,30 @@ public class Game {
         return winner;
     }
 
+    private boolean hasPossibleMoves (Player player) {
+        boolean hasPossibleMoves = false;
+        List<Piece> pieces = player == Player.GOLD ? goldPieces : silverPieces;
+        Tile tile;
+        for (Piece piece : pieces){
+            tile = board.tiles[piece.piecePositionY][piece.piecePositionX];
+            if (!isPieceFrozen(tile)){
+                Set<Tile> possibleMovementTiles = piece.getLegalMovementTiles(board);
+                Set<Tile> possiblePushFromTiles = generatePushFromTiles(tile);
+                if (possibleMovementTiles.size() > 0 || possiblePushFromTiles.size() > 0){
+                    hasPossibleMoves = true;
+                    break;
+                }
+            }
+        }
+
+        return hasPossibleMoves;
+    }
+
     private boolean rabbitReachedGoal(Player player){
         boolean ret = false;
 
         int goalPositionY = player == Player.GOLD ? 0 : 7;
-        Set<Piece> rabbitPieces = player == Player.GOLD ? goldRabbitPieces : silverRabbitPieces;
+        List<Piece> rabbitPieces = player == Player.GOLD ? goldRabbitPieces : silverRabbitPieces;
 
         for (Piece piece : rabbitPieces){
             if (piece.piecePositionY == goalPositionY){
@@ -541,8 +559,12 @@ public class Game {
                     Tile tile = board.tiles[y][x];
                     tile.setPiece(piece);
 
-                    if (gameType == GameType.versusComputer && piece != null && piece.getPiecePlayer() == Player.SILVER){
-                        computerPieces.add(piece);
+                    if (piece != null){
+                        if (piece.getPiecePlayer() == Player.GOLD){
+                            goldPieces.add(piece);
+                        } else {
+                            silverPieces.add(piece);
+                        }
                     }
                 }
                 y++;
