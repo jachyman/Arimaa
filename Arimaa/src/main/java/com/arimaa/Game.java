@@ -1,8 +1,8 @@
 package com.arimaa;
 
-import com.arimaa.pieces.Piece;
-import com.arimaa.pieces.Rabbit;
-import com.arimaa.pieces.SpecialPiece;
+import com.arimaa.pieces_src.Piece;
+import com.arimaa.pieces_src.Rabbit;
+import com.arimaa.pieces_src.SpecialPiece;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -94,6 +94,9 @@ public class Game {
         }
     }
     private void setTile(Tile tile){
+
+        // set Tile to react correctly when clicked
+
         tile.tileSquare.setOnMouseClicked(e -> {
 
             if (!gameIsOver && (gameType == GameType.versusPlayer || currentPlayer == Player.GOLD)) {
@@ -110,6 +113,7 @@ public class Game {
                         gui.clearBoard(board);
                     }
                 } else if (selectedTile != null && movementTiles.contains(tile)) {
+                    // if player clicked on tile where Piece on selected tile can move to, move it there
                     movement(selectedTile, tile);
                     handleTraps(selectedTile, tile);
 
@@ -119,6 +123,7 @@ public class Game {
 
                     selectedTile = null;
                 } else if (canBeMoved(tile)) {
+
                     selectedTile = tile;
 
                     if (moveCount < 3){
@@ -134,7 +139,7 @@ public class Game {
                     pullPiece(tile, pullToTile);
                     increaseMoveCount();
                 } else if (canBePushed(tile)){
-                    generatePushToTiles(tile);
+                    generatePushToTiles(tile); // find all pieces that can be pushed by piece on selected tile
                     pushFromTile = tile;
                     gui.fillTiles(pushToTiles, gui.pushToTileColor);
                 } else if (pushFromTile != null && pushToTiles.contains(tile)){
@@ -158,6 +163,7 @@ public class Game {
 
     public void endTurn(){
         if (setupPhase) {
+            // in setup phase, end turn changes current player or ends setup phase
             gui.clearBoard(board);
             if  (gameType == GameType.versusPlayer) {
                 currentPlayer = oppositePlayer(currentPlayer);
@@ -177,6 +183,7 @@ public class Game {
                 gui.gameOverScreen(winner, this);
             }
             else {
+                // if game is not over
                 switchStopwatch();
                 currentPlayer = oppositePlayer(currentPlayer);
                 moveCount = 0;
@@ -193,7 +200,7 @@ public class Game {
     }
 
     private void movePiece (Tile fromTile, Tile toTile){
-        Piece piece = board.tiles[fromTile.tileCoordinateY][fromTile.tileCoordinateX].getPiece();
+        com.arimaa.pieces_src.Piece piece = board.tiles[fromTile.tileCoordinateY][fromTile.tileCoordinateX].getPiece();
 
         piece.piecePositionX = toTile.tileCoordinateX;
         piece.piecePositionY = toTile.tileCoordinateY;
@@ -228,6 +235,7 @@ public class Game {
         movementTiles = tile.getPiece().getLegalMovementTiles(board);
     }
     private void generatePullFromTiles(Tile tile){
+        // find all pieces on tiles, that can be pulled from tile
         Piece piece, adjacentPiece;
         piece = tile.getPiece();
         pullFromTiles.clear();
@@ -239,25 +247,26 @@ public class Game {
         }
     }
     private Set<Tile> generatePushFromTiles(Tile tile){
+        // find all pieces on tiles, that can be pushed
         Piece piece, adjacentPiece;
         piece = tile.getPiece();
         Set<Tile> tiles = new HashSet<>();
-        //pushFromTiles.clear();
         for (Tile adjacentOccupiedTile : tile.adjacentOccupiedTiles(board)){
             adjacentPiece = adjacentOccupiedTile.getPiece();
             if (piece.getPiecePlayer() != adjacentPiece.getPiecePlayer() && piece.pieceStrength > adjacentPiece.pieceStrength){
-                //pushFromTiles.add(adjacentOccupiedTile);
                 tiles.add(adjacentOccupiedTile);
             }
         }
         return tiles;
     }
     private void generatePushToTiles(Tile tile){
+        // find all tiles, where piece on tile can be pushed
         pushToTiles.clear();
         pushToTiles.addAll(tile.adjacentFreeTiles(board));
     }
 
     private void handleTraps(Tile fromTile, Tile toTile){
+        // handle everything trap related, when piece is moved from formTile to toTile
         Tile adjacentTileTrapWithFriend = null;
         if (shouldRemovePieceOnTile(toTile)){
             removePieceOnTile(toTile);
@@ -271,7 +280,6 @@ public class Game {
     }
     private Tile findAdjacentTileTrapWithFriend(Tile tile, Player player){
         Tile tileTrapWithFriend = null;
-        //for (Tile adjacentTile : tile.adjacentTiles(board)){
         for (Tile adjacentTile : tile.adjacentOccupiedTiles(board)){
             if (adjacentTile.isTrap && adjacentTile.getPiece().getPiecePlayer() == player){
                 tileTrapWithFriend = adjacentTile;
@@ -292,7 +300,8 @@ public class Game {
         tile.removePiece();
     }
 
-    private void switchStopwatch(){
+    private void switchStopwatch() {
+        // pause current players stopwatch and start opposite players stopwatch
         if (currentPlayer == Player.GOLD) {
             gui.goldPlayerStopwatch.pause();
             if (gameType == GameType.versusPlayer){
@@ -375,6 +384,7 @@ public class Game {
     }
 
     private boolean shouldRemovePieceOnTile(Tile tile){
+        // checks if piece on tile should be removed
         boolean shouldRemove = false;
         if (tile.isTrap){
             shouldRemove = true;
@@ -481,6 +491,7 @@ public class Game {
     }
 
     public void changeStartPosition(Player player){
+        // set tiles for setup phase of the game for players turn
         int startRow = player == Player.GOLD ? 6 : 0;
         int endRow = player == Player.GOLD ? 7 : 1;
         selectedTile = null;
@@ -519,6 +530,7 @@ public class Game {
     }
 
     public void generatePiecesPosition(){
+        // set pieces according to map in file
         //String fileName = "map_2.txt";
         //String fileName = "map_simple.txt";
         String fileName = "starting_piece_position.txt";

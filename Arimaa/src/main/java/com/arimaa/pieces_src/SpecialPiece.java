@@ -1,9 +1,6 @@
-package com.arimaa.pieces;
+package com.arimaa.pieces_src;
 
 import com.arimaa.*;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public class SpecialPiece extends Piece {
 

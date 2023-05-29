@@ -1,4 +1,4 @@
-package com.arimaa.pieces;
+package com.arimaa.pieces_src;
 
 import com.arimaa.*;
 

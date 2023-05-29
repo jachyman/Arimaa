@@ -1,11 +1,10 @@
 package com.arimaa;
 
-import com.arimaa.pieces.Piece;
+import com.arimaa.pieces_src.Piece;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 public class Tile {
@@ -15,6 +14,7 @@ public class Tile {
     Piece piece;
     final public boolean isTrap;
     public Rectangle tileSquare;
+    public Rectangle pieceSquare;
     public Text pieceText;
 
     public Tile(final int tileCoordinateX, final int tileCoordinateY, final boolean isTrap) {

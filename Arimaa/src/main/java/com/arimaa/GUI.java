@@ -27,13 +27,12 @@ public class GUI {
     private final int mainStageWidth = 800;
     private final int mainStageHeight = 800;
     private final double tileSquareSize = 70;
+    private final double pieceSquareSize = 50;
     private final int gameOverStageWidth = 300;
     private final int gameOverStageHeight = 300;
 
     public final Color selectedTileColor = Color.LIGHTBLUE;
     public final Color movemetToColor = Color.LIGHTGREEN;
-    public final Color computerFromMoveColor = Color.RED;
-    public final Color computerToMoveColor = Color.YELLOW;
     public final Color pullFromColor = Color.LIGHTYELLOW;
     public final Color pushFromColor = Color.LIGHTPINK;
     public final Color pushToTileColor = Color.LIGHTPINK;
@@ -50,7 +49,6 @@ public class GUI {
     public GUI(Stage mainStage) {
         this.mainStage = mainStage;
         menuGrid = new GridPane();
-        //gameGrid = new GridPane();
     }
 
     public void setStageMenu(){
@@ -168,8 +166,12 @@ public class GUI {
         for (int y = 0; y < 8; ++y){
             for (int x = 0; x < 8; ++x){
                 Rectangle tileSquare = new Rectangle(tileSquareSize, tileSquareSize);
+
                 board.tiles[y][x].tileSquare = tileSquare;
+                //board.tiles[y][x].pieceSquare = pieceSquare;
+
                 gameGrid.add(tileSquare, x, y);
+                //gameGrid.add(pieceSquare, x, y);
             }
         }
     }
@@ -249,6 +251,7 @@ public class GUI {
     }
 
     public void delayComputerMoves(Game game, int computerMoveCount, int secondsPerMove){
+        // set game moves with delay (for computer moves)
         Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(secondsPerMove), new EventHandler<>() {
             private int moves = 0;
             @Override
