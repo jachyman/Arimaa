@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
-
+import java.util.logging.*;
 public class Game {
 
     private Player currentPlayer;
@@ -40,9 +40,24 @@ public class Game {
     public int moveCount;
     private final int maxMoves = 4;
 
+    private static final String startPiecePositionFileName = "starting_piece_position.txt";
+    private static final Logger logger = Logger.getLogger(Game.class.getName());
+    Handler stdout;
+
     public Game(Board board, GUI gui) {
         this.board = board;
         this.gui = gui;
+        logger.setLevel(Level.ALL);
+    }
+
+    private void setLogger() {
+        logger.setLevel(Level.ALL);
+
+        logger.setUseParentHandlers(false);
+        ConsoleHandler handler = new ConsoleHandler();
+        handler.setLevel(Level.ALL);
+
+        logger.addHandler(handler);
     }
 
     public void startVersusPlayer(){
@@ -69,7 +84,8 @@ public class Game {
         silverPieces = new ArrayList<>();
 
         setTileSets();
-        generatePiecesPosition();
+        generatePiecesPosition(startPiecePositionFileName);
+        setLogger();
 
         gui.setMoveCounter(moveCount);
         gui.setCurrentPlayer(currentPlayer);
@@ -78,6 +94,7 @@ public class Game {
 
         changeStartPosition(currentPlayer);
     }
+
     private void setTileSets(){
         movementTiles = new HashSet<>();
         pushFromTiles = new HashSet<>();
@@ -166,7 +183,6 @@ public class Game {
 
     public void endTurn(){
         switchStopwatch();
-
         if (setupPhase) {
             // in setup phase, end turn changes current player or ends setup phase
             gui.clearBoard(board);
@@ -204,6 +220,7 @@ public class Game {
             gui.clearBoard(board);
         } else {
             // board has not been changed
+            logger.info("Board was not changed");
             moveCount = 0;
             gui.setMoveCounter(moveCount);
         }
@@ -219,7 +236,7 @@ public class Game {
         }
     }
 
-    private void movePiece (Tile fromTile, Tile toTile){
+    public void movePiece (Tile fromTile, Tile toTile){
         com.arimaa.pieces_src.Piece piece = board.tiles[fromTile.tileCoordinateY][fromTile.tileCoordinateX].getPiece();
 
         piece.piecePositionX = toTile.tileCoordinateX;
@@ -454,14 +471,19 @@ public class Game {
         List<Piece> oppositePlayerRabbit = oppositePlayer == Player.GOLD ? goldRabbitPieces : silverRabbitPieces;
 
         if (rabbitReachedGoal(currentPlayer)){
+            logger.info("Current player rabbit reached goal");
             winner = currentPlayer;
         } else if (rabbitReachedGoal(oppositePlayer)){
+            logger.info("Opposite player rabbit reached goal");
             winner = oppositePlayer;
         } else if (oppositePlayerRabbit.size() == 0) {
+            logger.info("Opposite player has no rabbits left");
             winner = currentPlayer;
         } else if (currentPlayerRabbit.size() == 0) {
+            logger.info("Current player has no rabbits left");
             winner = oppositePlayer;
         } else if (!hasPossibleMoves(oppositePlayer)) {
+            logger.info("Opposite player has no possible moves");
             winner = currentPlayer;
         }
 
@@ -475,7 +497,8 @@ public class Game {
         for (int y = 0; y < 8; ++y){
             for (int x = 0; x < 8; ++x){
                 if (!(board.tiles[y][x].equals(lastBoard.tiles[y][x]))){
-                    System.out.println(y + " " + x);
+                    System.out.println("TST");
+                    logger.info("Board was changed on tile x: " + x + " y: " + y);
                     return true;
                 }
             }
@@ -555,7 +578,7 @@ public class Game {
         });
     }
 
-    private void switchPiecesOnTiles(Tile tile1, Tile tile2) {
+    public void switchPiecesOnTiles(Tile tile1, Tile tile2) {
         Piece tmpPiece = tile1.piece;
         movePiece(tile2, tile1);
 
@@ -564,11 +587,8 @@ public class Game {
         tile2.setPiece(tmpPiece);
     }
 
-    public void generatePiecesPosition(){
+    public void generatePiecesPosition(String fileName){
         // set pieces according to map in file
-        //String fileName = "map_2.txt";
-        //String fileName = "map_simple.txt";
-        String fileName = "starting_piece_position.txt";
         Path pathToProject = Paths.get("");
         Path filePath = Paths.get(pathToProject.toAbsolutePath() + "\\src\\main\\java\\com\\arimaa\\" + fileName);
 
@@ -617,6 +637,7 @@ public class Game {
                 y++;
             }
         } catch (IOException e) {
+            logger.warning("Error while reading start piece position file");
             e.printStackTrace();
         }
     }

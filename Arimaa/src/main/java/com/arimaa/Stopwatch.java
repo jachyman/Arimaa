@@ -24,8 +24,6 @@ public class Stopwatch implements Runnable {
             minutes++;
         }
 
-        //System.out.println(seconds);
-
         String m = minutes >= 10 ? String.valueOf(minutes) : "0" + String.valueOf(minutes);
         String s = seconds >= 10 ? String.valueOf(seconds) : "0" + String.valueOf(seconds);
 
@@ -45,19 +43,18 @@ public class Stopwatch implements Runnable {
     }
 
     public void start() {
-        if (isStopped) {
-            thread = new Thread(this);
-            thread.setDaemon(true);
-            thread.start();
-        }
+        thread = new Thread(this);
+        thread.setDaemon(true);
+        thread.start();
         isStopped = false;
     }
 
     public void stop(){
-        if (!isStopped){
-            thread = null;
-        }
         isStopped = true;
+    }
+
+    public void resume() {
+        isStopped = false;
     }
 
 }
