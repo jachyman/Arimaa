@@ -101,7 +101,7 @@ public class GUI {
         Label goldPlayerStopwatchLabel;
 
         backButton = new Button("Back to menu");
-        backButton.setOnAction(e -> mainStage.setScene(menuScene));
+        backButton.setOnAction(e -> backToMainMenu());
 
         endTurnButton = new Button("End turn");
         endTurnButton.setOnAction(e -> {
@@ -145,6 +145,14 @@ public class GUI {
         GridPane.setConstraints(silverPlayerStopwatchLabel, 10, 6);
         GridPane.setConstraints(silverPlayerStopwatch.timeText, 10, 7);
         gameGrid.getChildren().addAll(silverPlayerStopwatchLabel, silverPlayerStopwatch.timeText);
+    }
+
+    private void backToMainMenu() {
+        goldPlayerStopwatch.stop();
+        if (silverPlayerStopwatch != null){
+            silverPlayerStopwatch.stop();
+        }
+        mainStage.setScene(menuScene);
     }
 
     public void setMoveCounter(int moveCount){
