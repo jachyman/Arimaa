@@ -2,6 +2,9 @@ package com.arimaa;
 
 import java.util.Set;
 
+/**
+ * Class represents board of tiles of game Arimaa
+ */
 public class Board {
     public Tile[][] tiles = new Tile[8][8];
     Set<Integer> trapCoordinates = Set.of(18, 21, 42, 45);
@@ -19,6 +22,7 @@ public class Board {
     }
 
     public void print(){
+        // method just for debugging purposes
         for (int i = 0; i < 8; ++i){
             for (int j = 0; j < 8; ++j){
                 Tile t = tiles[i][j];

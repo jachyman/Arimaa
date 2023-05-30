@@ -2,6 +2,9 @@ package com.arimaa;
 
 import javafx.scene.text.Text;
 
+/**
+ * Class that emulates stopwatch - time can be started, started and resumed
+ */
 public class Stopwatch implements Runnable {
     public Text timeText;
     private int minutes, seconds;

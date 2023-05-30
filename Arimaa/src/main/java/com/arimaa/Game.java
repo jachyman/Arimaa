@@ -11,6 +11,12 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.*;
+
+/**
+ * This class handles all the rules of Arimma game
+ *
+ * @author Jachym Zak
+ */
 public class Game {
 
     private Player currentPlayer;
@@ -60,10 +66,17 @@ public class Game {
         logger.addHandler(handler);
     }
 
+    /**
+     * Sets up a Player versus Player game
+     */
     public void startVersusPlayer(){
         gameType = GameType.versusPlayer;
         setGame();
     }
+
+    /**
+     * Sets up a Player versus Computer game
+     */
     public void startVersusComputer(){
         gameType = GameType.versusComputer;
         setGame();
@@ -181,6 +194,9 @@ public class Game {
         });
     }
 
+    /**
+     * Ends turn of current player (if it is legal) and checks if game is over
+     */
     public void endTurn(){
         switchStopwatch();
         if (setupPhase) {
@@ -236,6 +252,11 @@ public class Game {
         }
     }
 
+    /**
+     * Move piece from one tile to another
+     * @param fromTile a tile from which piece should be moved
+     * @param toTile a tile where the piece should be moved to
+     */
     public void movePiece (Tile fromTile, Tile toTile){
         com.arimaa.pieces_src.Piece piece = board.tiles[fromTile.tileCoordinateY][fromTile.tileCoordinateX].getPiece();
 
@@ -360,6 +381,9 @@ public class Game {
     }
 
 
+    /**
+     * Play random computer move
+     */
     public void playComputerMove(){
         Collections.shuffle(silverPieces);
         for (Piece piece : silverPieces){
@@ -497,7 +521,6 @@ public class Game {
         for (int y = 0; y < 8; ++y){
             for (int x = 0; x < 8; ++x){
                 if (!(board.tiles[y][x].equals(lastBoard.tiles[y][x]))){
-                    System.out.println("TST");
                     logger.info("Board was changed on tile x: " + x + " y: " + y);
                     return true;
                 }
@@ -545,7 +568,7 @@ public class Game {
         return player == Player.GOLD ? Player.SILVER : Player.GOLD;
     }
 
-    public void changeStartPosition(Player player){
+    private void changeStartPosition(Player player){
         // set tiles for setup phase of the game for players turn
         int startRow = player == Player.GOLD ? 6 : 0;
         int endRow = player == Player.GOLD ? 7 : 1;

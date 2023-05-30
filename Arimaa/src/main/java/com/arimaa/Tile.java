@@ -6,8 +6,10 @@ import javafx.scene.text.Text;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
+/**
+ * Class represents tile on board of game Arimaa
+ */
 public class Tile {
 
     final public int tileCoordinateX;
@@ -60,6 +62,7 @@ public class Tile {
     public Piece getPiece(){
         return piece;
     }
+
     public void setPiece(Piece piece) {
         this.piece = piece;
         String pieceString = "";

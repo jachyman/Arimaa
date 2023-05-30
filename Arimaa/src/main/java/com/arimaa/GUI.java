@@ -17,6 +17,12 @@ import javafx.util.Duration;
 
 import java.util.Set;
 
+/**
+ * This class handles all events related to graphics of Arimaa game
+ *
+ * @author Jachym Zak
+ */
+
 public class GUI {
 
     private final GridPane menuGrid;
@@ -31,6 +37,8 @@ public class GUI {
     private final int gameOverStageWidth = 300;
     private final int gameOverStageHeight = 300;
 
+    public final Color emptyTileColor = Color.WHITE;
+    public final Color trapTileColor = Color.LIGHTGRAY;
     public final Color selectedTileColor = Color.LIGHTBLUE;
     public final Color movemetToColor = Color.LIGHTGREEN;
     public final Color pullFromColor = Color.LIGHTYELLOW;
@@ -51,11 +59,18 @@ public class GUI {
         menuGrid = new GridPane();
     }
 
+    /**
+     * Set stage of main menu
+     */
     public void setStageMenu(){
         mainStage.setScene(menuScene);
         mainStage.setTitle("Arimaa");
     }
 
+    /**
+     * Add all pieces on board to game GridPane
+     * @param board all of its pieces will be set
+     */
     public void setPieces(Board board){
         for (int y = 0; y < 8; ++y){
             for (int x = 0; x < 8; ++x){
@@ -68,6 +83,10 @@ public class GUI {
         gameGrid.add(tile.pieceText, tile.tileCoordinateX, tile.tileCoordinateY);
     }
 
+    /**
+     * Create main menu scene
+     * @param game game which main menu will start after user chooses game type
+     */
     public void createMenuScene(Game game){
         Button versusPlayerButton, versusComputerButton;
         Label menuLabel;
@@ -96,6 +115,11 @@ public class GUI {
         menuScene = new Scene(menuGrid, mainStageWidth, mainStageHeight);
     }
 
+    /**
+     * Create game scene
+     * @param board game scene will be created based this board
+     * @param game game scene will be calling methods from this game
+     */
     public void createGameScene(Board board, Game game){
         Button backButton, endTurnButton;
         Label goldPlayerStopwatchLabel;
@@ -155,9 +179,18 @@ public class GUI {
         mainStage.setScene(menuScene);
     }
 
+    /**
+     * Update move counter label
+     * @param moveCount move counter will be set to this value
+     */
     public void setMoveCounter(int moveCount){
         moveCountLabel.setText("Moves made: " + Integer.toString(moveCount));
     }
+
+    /**
+     * Update current player label
+     * @param currentPlayer current player label will be set to this value
+     */
     public void setCurrentPlayer(Player currentPlayer){
         String currentPlayerString = currentPlayer == Player.GOLD ? "Gold" : "Silver";
         currentPlayerLabel.setText("Current player: " + currentPlayerString);
@@ -184,6 +217,11 @@ public class GUI {
         }
     }
 
+    /**
+     * Fill all tiles in set to specific color
+     * @param tiles set of tiles that will be colored
+     * @param color this color will be used to fill all tiles
+     */
     public void fillTiles(Set<Tile> tiles, Color color){
         for (Tile tile : tiles){
             tile.tileSquare.setFill(color);
@@ -194,19 +232,28 @@ public class GUI {
         tile.tileSquare.setFill(color);
     }
 
+    /**
+     * Clear all tiles on board from their color and fill trap tiles with trap tile color
+     * @param board this board will be cleared
+     */
     public void clearBoard(Board board){
         Rectangle tileSquare;
         for (int i = 0; i < 8; ++i){
             for (int j = 0; j < 8; ++j){
                 tileSquare = board.tiles[i][j].tileSquare;
-                tileSquare.setFill(Color.WHITE);
+                tileSquare.setFill(emptyTileColor);
                 if (board.getTile(i, j).isTrap){
-                    tileSquare.setFill(Color.LIGHTGRAY);
+                    tileSquare.setFill(trapTileColor);
                 }
             }
         }
     }
 
+    /**
+     * Create and show game over screen
+     * @param winner player that won the game
+     * @param game game that the game over screen is for
+     */
     public void gameOverScreen(Player winner, Game game){
         Button versusPlayerButton, versusComputerButton;
 
@@ -258,6 +305,12 @@ public class GUI {
         mainStage.show();
     }
 
+    /**
+     * Play computer moves with certain delay
+     * @param game game in which is computer playing
+     * @param computerMoveCount how many should be played
+     * @param secondsPerMove how long should delay be in seconds
+     */
     public void delayComputerMoves(Game game, int computerMoveCount, int secondsPerMove){
         // set game moves with delay (for computer moves)
         Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(secondsPerMove), new EventHandler<>() {
