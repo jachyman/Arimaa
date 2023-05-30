@@ -1,8 +1,5 @@
 package com.arimaa;
 
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
-
 import java.util.Set;
 
 public class Board {

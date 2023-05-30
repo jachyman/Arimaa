@@ -6,6 +6,7 @@ import javafx.scene.text.Text;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class Tile {
 
@@ -23,6 +24,33 @@ public class Tile {
         this.isTrap = isTrap;
         this.piece = null;
         this.pieceText = new Text();
+    }
+
+    public Tile(Tile that) {
+        this(that.tileCoordinateX, that.tileCoordinateY, that.isTrap);
+    }
+
+    @Override
+    public boolean equals(Object o){
+        if (o == this){
+            return true;
+        }
+        if (!(o instanceof Tile)){
+            return false;
+        }
+
+        Tile t = (Tile) o;
+
+        if (this.isTileOccupied() != t.isTileOccupied()){
+            return false;
+        }
+
+        if (!t.isTileOccupied()){
+            return true;
+        }
+
+        return this.piece.getPiecePlayer() == t.piece.getPiecePlayer()
+                && this.piece.pieceStrength == t.piece.pieceStrength;
     }
 
     public boolean isTileOccupied(){

@@ -19,6 +19,7 @@ public class Game {
 
     public GameType gameType;
     private Tile selectedTile;
+    private Board lastBoard;
 
     private List<Piece> goldRabbitPieces;
     private List<Piece> silverRabbitPieces;
@@ -60,6 +61,7 @@ public class Game {
         selectedTile = null;
         gameIsOver = false;
         setupPhase = true;
+        lastBoard = new Board();
 
         goldRabbitPieces = new ArrayList<>();
         silverRabbitPieces = new ArrayList<>();
@@ -71,6 +73,7 @@ public class Game {
 
         gui.setMoveCounter(moveCount);
         gui.setCurrentPlayer(currentPlayer);
+
         gui.goldPlayerStopwatch.start();
 
         changeStartPosition(currentPlayer);
@@ -162,6 +165,8 @@ public class Game {
     }
 
     public void endTurn(){
+        switchStopwatch();
+
         if (setupPhase) {
             // in setup phase, end turn changes current player or ends setup phase
             gui.clearBoard(board);
@@ -170,21 +175,22 @@ public class Game {
                 changeStartPosition(currentPlayer);
             }
             if (currentPlayer == Player.GOLD){
+                copyToLastBoard();
                 setTiles();
                 setupPhase = false;
             }
-        } else {
+        } else if (boardChanged()) {
+            copyToLastBoard();
             Player winner = checkGameOver();
             if (gameIsOver){
-                gui.goldPlayerStopwatch.pause();
+                gui.goldPlayerStopwatch.stop();
                 if (gameType == GameType.versusPlayer){
-                    gui.silverPlayerStopwatch.pause();
+                    gui.silverPlayerStopwatch.stop();
                 }
                 gui.gameOverScreen(winner, this);
             }
             else {
                 // if game is not over
-                switchStopwatch();
                 currentPlayer = oppositePlayer(currentPlayer);
                 moveCount = 0;
                 gui.setMoveCounter(moveCount);
@@ -196,6 +202,20 @@ public class Game {
             }
             setTileSets();
             gui.clearBoard(board);
+        } else {
+            // board has not been changed
+            moveCount = 0;
+            gui.setMoveCounter(moveCount);
+        }
+    }
+
+    private void copyToLastBoard() {
+        for (int y = 0; y < 8; ++y){
+            for (int x = 0; x < 8; ++x){
+                Tile t = new Tile(board.tiles[y][x]);
+                t.setPiece(board.tiles[y][x].getPiece());
+                lastBoard.tiles[y][x] = t;
+            }
         }
     }
 
@@ -303,15 +323,15 @@ public class Game {
     private void switchStopwatch() {
         // pause current players stopwatch and start opposite players stopwatch
         if (currentPlayer == Player.GOLD) {
-            gui.goldPlayerStopwatch.pause();
+            gui.goldPlayerStopwatch.stop();
             if (gameType == GameType.versusPlayer){
-                gui.silverPlayerStopwatch.resume();
+                gui.silverPlayerStopwatch.start();
             }
         } else {
             if (gameType == GameType.versusPlayer){
-                gui.silverPlayerStopwatch.pause();
+                gui.silverPlayerStopwatch.stop();
             }
-            gui.goldPlayerStopwatch.resume();
+            gui.goldPlayerStopwatch.start();
         }
     }
 
@@ -451,6 +471,18 @@ public class Game {
         return winner;
     }
 
+    private boolean boardChanged() {
+        for (int y = 0; y < 8; ++y){
+            for (int x = 0; x < 8; ++x){
+                if (!(board.tiles[y][x].equals(lastBoard.tiles[y][x]))){
+                    System.out.println(y + " " + x);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private boolean hasPossibleMoves (Player player) {
         boolean hasPossibleMoves = false;
         List<Piece> pieces = player == Player.GOLD ? goldPieces : silverPieces;
@@ -526,6 +558,9 @@ public class Game {
     private void switchPiecesOnTiles(Tile tile1, Tile tile2) {
         Piece tmpPiece = tile1.piece;
         movePiece(tile2, tile1);
+
+        tmpPiece.piecePositionX = tile2.tileCoordinateX;
+        tmpPiece.piecePositionY = tile2.tileCoordinateY;
         tile2.setPiece(tmpPiece);
     }
 
