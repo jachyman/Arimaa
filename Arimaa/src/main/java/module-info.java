@@ -5,6 +5,6 @@ module com.arimaa {
 
     opens com.arimaa to javafx.fxml;
     exports com.arimaa;
-    exports com.arimaa.pieces;
-    opens com.arimaa.pieces to javafx.fxml;
+    exports com.arimaa.pieces_src;
+    opens com.arimaa.pieces_src to javafx.fxml;
 }
