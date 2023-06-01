@@ -321,7 +321,7 @@ public class GUI {
                 if (moves == computerMoveCount) {
                     game.endTurn();
                 } else {
-                    game.playComputerMove();
+                    game.playComputerMove(moves, computerMoveCount);
                 }
                 moves++;
             }

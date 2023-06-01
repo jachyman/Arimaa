@@ -47,6 +47,7 @@ public class Game {
     private final int maxMoves = 4;
 
     private static final String startPiecePositionFileName = "starting_piece_position.txt";
+    //private static final String startPiecePositionFileName = "map_simple.txt";
     private static final Logger logger = Logger.getLogger(Game.class.getName());
 
     public Game(Board board, GUI gui, boolean useLogger) {
@@ -59,6 +60,7 @@ public class Game {
             logger.setLevel(Level.OFF);
         }
         setTileSets();
+        setTileLists();
     }
 
     private void setLogger() {
@@ -107,16 +109,18 @@ public class Game {
         changeStartPosition(currentPlayer);
     }
 
+    private void setTileLists() {
+        goldRabbitPieces = new ArrayList<>();
+        silverRabbitPieces = new ArrayList<>();
+        goldPieces = new ArrayList<>();
+        silverPieces = new ArrayList<>();
+    }
+
     private void setTileSets(){
         movementTiles = new HashSet<>();
         pushFromTiles = new HashSet<>();
         pushToTiles = new HashSet<>();
         pullFromTiles = new HashSet<>();
-
-        goldRabbitPieces = new ArrayList<>();
-        silverRabbitPieces = new ArrayList<>();
-        goldPieces = new ArrayList<>();
-        silverPieces = new ArrayList<>();
 
         pullToTile = null;
         finishPushTile = null;
@@ -381,7 +385,6 @@ public class Game {
     private void playComputerTurn(){
         int secondsPerMove = 2;
         int computerMoveCount = ThreadLocalRandom.current().nextInt(1, 5);
-        System.out.println(computerMoveCount);
         gui.delayComputerMoves(this, computerMoveCount, secondsPerMove);
     }
 
@@ -389,20 +392,45 @@ public class Game {
     /**
      * Play random computer move
      */
-    public void playComputerMove(){
-        Collections.shuffle(silverPieces);
-        for (Piece piece : silverPieces){
-            movementTiles = piece.getLegalMovementTiles(board);
-            if (!movementTiles.isEmpty()){
-                Tile fromTile = board.tiles[piece.piecePositionY][piece.piecePositionX];
+    public void playComputerMove(int moves, int computerMoveCount){
+        //board.print();
+        if (finishPushTile != null) {
+            movePiece(pushingTile, finishPushTile);
+            pushingTile = null;
+            finishPushTile = null;
+        } else {
 
-                Tile toTile = randomTile(movementTiles);
+            Collections.shuffle(silverPieces);
+            for (Piece piece : silverPieces) {
+                Tile tile = board.tiles[piece.piecePositionY][piece.piecePositionX];
+                movementTiles = piece.getLegalMovementTiles(board);
+                pushFromTiles = generatePushFromTiles(tile);
 
-                movePiece(fromTile, toTile);
-                handleTraps(fromTile, toTile);
-                gui.fillTile(fromTile, gui.selectedTileColor);
-                gui.fillTile(toTile, gui.movemetToColor);
-                break;
+                if ((computerMoveCount - moves) > 1 && !pushFromTiles.isEmpty()) {
+                    pushFromTile = randomTile(pushFromTiles);
+
+                    generatePushToTiles(pushFromTile);
+                    Tile pushToTile = randomTile(pushToTiles);
+
+                    pushPiece(pushFromTile, pushToTile);
+                    finishPushTile = pushFromTile;
+                    pushingTile = tile;
+
+                    gui.fillTile(pushFromTile, gui.pushFromColor);
+                    gui.fillTile(pushToTile, gui.pushToTileColor);
+
+                    break;
+                }
+
+                if (!movementTiles.isEmpty()) {
+                    Tile toTile = randomTile(movementTiles);
+
+                    movePiece(tile, toTile);
+                    handleTraps(tile, toTile);
+                    gui.fillTile(tile, gui.selectedTileColor);
+                    gui.fillTile(toTile, gui.movemetToColor);
+                    break;
+                }
             }
         }
     }
