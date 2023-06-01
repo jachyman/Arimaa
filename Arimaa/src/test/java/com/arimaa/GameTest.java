@@ -61,4 +61,34 @@ class GameTest {
         assert(!startTile.isTileOccupied());
         assertEquals(piece, destinationTile.getPiece());
     }
+
+    @Test
+    void pieceOnTrapShouldBeRemovedWhenOnlyAdjacentFriendlyPieceIsMoved() {
+        Board board = new Board();
+        GUI gui = null;
+
+        int pieceOnTrapX = 2;
+        int pieceOnTrapY = 2;
+        int friendlyPieceX = 3;
+        int friendlyPieceY = 2;
+        int destinationX = 3;
+        int destinationY = 3;
+
+        Dog pieceOnTrap = new Dog(pieceOnTrapX, pieceOnTrapY, Player.SILVER);
+        Dog friendlyPiece = new Dog(friendlyPieceX, friendlyPieceY, Player.SILVER);
+
+        Tile trapTile = board.tiles[pieceOnTrapY][pieceOnTrapX];
+        Tile originalFriendlyPieceTile = board.tiles[friendlyPieceY][friendlyPieceX];
+        Tile destinationTile = board.tiles[destinationY][destinationX];
+
+        trapTile.setPiece(pieceOnTrap);
+        originalFriendlyPieceTile.setPiece(friendlyPiece);
+
+        Game game = new Game(board, gui, false);
+
+        game.movePiece(originalFriendlyPieceTile, destinationTile);
+        game.handleTraps(originalFriendlyPieceTile, destinationTile);
+
+        assert(!trapTile.isTileOccupied());
+    }
 }

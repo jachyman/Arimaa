@@ -58,6 +58,7 @@ public class Game {
         else {
             logger.setLevel(Level.OFF);
         }
+        setTileSets();
     }
 
     private void setLogger() {
@@ -95,11 +96,6 @@ public class Game {
         setupPhase = true;
         lastBoard = new Board();
 
-        goldRabbitPieces = new ArrayList<>();
-        silverRabbitPieces = new ArrayList<>();
-        goldPieces = new ArrayList<>();
-        silverPieces = new ArrayList<>();
-
         setTileSets();
         generatePiecesPosition(startPiecePositionFileName);
 
@@ -116,6 +112,12 @@ public class Game {
         pushFromTiles = new HashSet<>();
         pushToTiles = new HashSet<>();
         pullFromTiles = new HashSet<>();
+
+        goldRabbitPieces = new ArrayList<>();
+        silverRabbitPieces = new ArrayList<>();
+        goldPieces = new ArrayList<>();
+        silverPieces = new ArrayList<>();
+
         pullToTile = null;
         finishPushTile = null;
         pushingTile = null;
@@ -326,7 +328,7 @@ public class Game {
         pushToTiles.addAll(tile.adjacentFreeTiles(board));
     }
 
-    private void handleTraps(Tile fromTile, Tile toTile){
+    public void handleTraps(Tile fromTile, Tile toTile){
         // handle everything trap related, when piece is moved from formTile to toTile
         Tile adjacentTileTrapWithFriend = null;
         if (shouldRemovePieceOnTile(toTile)){
@@ -613,7 +615,7 @@ public class Game {
         tile2.setPiece(tmpPiece);
     }
 
-    public void generatePiecesPosition(String fileName){
+    private void generatePiecesPosition(String fileName){
         // set pieces according to map in file
         Path pathToProject = Paths.get("");
         Path filePath = Paths.get(pathToProject.toAbsolutePath() + "\\src\\main\\java\\com\\arimaa\\" + fileName);
