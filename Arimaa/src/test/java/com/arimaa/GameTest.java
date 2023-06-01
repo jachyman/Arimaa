@@ -28,7 +28,7 @@ class GameTest {
         board.tiles[rabbitY][rabbitX] = originalRabbitTile;
         board.tiles[dogY][dogX] = originalDogTile;
 
-        Game game = new Game(board, gui);
+        Game game = new Game(board, gui, false);
         game.switchPiecesOnTiles(originalDogTile, originalRabbitTile);
 
         assertEquals(rabbit, originalDogTile.getPiece());
@@ -55,7 +55,7 @@ class GameTest {
         board.tiles[pieceY][pieceX] = startTile;
         board.tiles[destinationY][destinationX] = destinationTile;
 
-        Game game = new Game(board, gui);
+        Game game = new Game(board, gui, false);
         game.movePiece(startTile, destinationTile);
 
         assert(!startTile.isTileOccupied());

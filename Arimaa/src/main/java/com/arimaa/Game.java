@@ -48,12 +48,16 @@ public class Game {
 
     private static final String startPiecePositionFileName = "starting_piece_position.txt";
     private static final Logger logger = Logger.getLogger(Game.class.getName());
-    Handler stdout;
 
-    public Game(Board board, GUI gui) {
+    public Game(Board board, GUI gui, boolean useLogger) {
         this.board = board;
         this.gui = gui;
-        logger.setLevel(Level.ALL);
+        if (useLogger) {
+            setLogger();
+        }
+        else {
+            logger.setLevel(Level.OFF);
+        }
     }
 
     private void setLogger() {
@@ -98,7 +102,6 @@ public class Game {
 
         setTileSets();
         generatePiecesPosition(startPiecePositionFileName);
-        setLogger();
 
         gui.setMoveCounter(moveCount);
         gui.setCurrentPlayer(currentPlayer);
