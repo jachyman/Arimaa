@@ -150,6 +150,7 @@ public class Game {
                     gui.fillTile(finishPushTile, gui.finishPushTileColor);
                     if (tile == finishPushTile){
                         movePiece(pushingTile, finishPushTile);
+                        handleTraps(pushingTile, finishPushTile);
                         finishPushTile = null;
                         increaseMoveCount();
                         gui.clearBoard(board);
@@ -207,12 +208,15 @@ public class Game {
      * Ends turn of current player (if it is legal) and checks if game is over
      */
     public void endTurn(){
-        switchStopwatch();
+        if (!(setupPhase && currentPlayer == Player.GOLD)) {
+            switchStopwatch();
+        }
         if (setupPhase) {
             // in setup phase, end turn changes current player or ends setup phase
             gui.clearBoard(board);
             if  (gameType == GameType.versusPlayer) {
                 currentPlayer = oppositePlayer(currentPlayer);
+                gui.setCurrentPlayer(currentPlayer);
                 changeStartPosition(currentPlayer);
             }
             if (currentPlayer == Player.GOLD){
@@ -396,6 +400,7 @@ public class Game {
         //board.print();
         if (finishPushTile != null) {
             movePiece(pushingTile, finishPushTile);
+            handleTraps(pushingTile, finishPushTile);
             pushingTile = null;
             finishPushTile = null;
         } else {
